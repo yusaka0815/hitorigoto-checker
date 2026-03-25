@@ -65,6 +65,23 @@
     #recalibrate-btn { background: #555; font-size: 0.85rem; padding: 10px 24px; }
     #reset-btn       { background: #5a7a3a; font-size: 0.75rem; padding: 8px 18px; margin-top: 4px; }
 
+    #sensitivity-wrap {
+      width: 100%; max-width: 320px;
+      margin-top: 20px; margin-bottom: 4px;
+    }
+    #sensitivity-wrap label {
+      font-size: 0.8rem; color: #aaa;
+      display: flex; justify-content: space-between; margin-bottom: 6px;
+    }
+    #sensitivity-wrap .ends {
+      display: flex; justify-content: space-between;
+      font-size: 0.7rem; color: #666; margin-top: 4px;
+    }
+    #sensitivity {
+      width: 100%; accent-color: #2196f3;
+    }
+    #sensitivity-val { font-size: 0.75rem; color: #2196f3; margin-top: 4px; text-align: center; }
+
     #alert-count { margin-top: 16px; font-size: 0.85rem; color: #888; }
     #saved-info  { font-size: 0.72rem; color: #4a8; margin-top: 6px; }
     #debug-info  {
@@ -75,7 +92,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.2.0</div>
+  <div class="version">v1.2.1</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -89,6 +106,15 @@
     <div id="level-bar-bg"><div id="level-bar"></div></div>
   </div>
   <div id="threshold-info">閾値: —</div>
+
+  <div id="sensitivity-wrap">
+    <label>
+      <span>感度調整</span>
+    </label>
+    <input type="range" id="sensitivity" min="1" max="7" step="1" value="4">
+    <div class="ends"><span>鈍感（誤検知を減らす）</span><span>敏感（小声も検出）</span></div>
+    <div id="sensitivity-val">標準</div>
+  </div>
 
   <div>
     <button id="start-btn">開始</button>
@@ -109,6 +135,18 @@ const SPEECH_HOLD_MS    = 1200;
 const ALERT_COOLDOWN_MS = 5000;
 const RECALIB_MS        = 60000;
 const STORAGE_KEY       = 'hitorigoto_calib';
+const SENSITIVITY_KEY   = 'hitorigoto_sensitivity';
+
+// 感度スライダー値(1〜7) → 閾値への乗数
+// 1(鈍感)=×2.0、4(標準)=×1.0、7(敏感)=×0.4
+function sensitivityToMultiplier(v) {
+  return 2.0 - (v - 1) * (1.6 / 6);
+}
+
+const SENSITIVITY_LABELS = {
+  1: 'かなり鈍感', 2: '鈍感', 3: 'やや鈍感',
+  4: '標準', 5: 'やや敏感', 6: '敏感', 7: 'かなり敏感'
+};
 
 // ---- 状態 ----
 let audioCtx = null, analyser = null, micStream = null;
@@ -132,9 +170,11 @@ const startBtn     = document.getElementById('start-btn');
 const stopBtn      = document.getElementById('stop-btn');
 const recalibBtn   = document.getElementById('recalibrate-btn');
 const resetBtn     = document.getElementById('reset-btn');
-const alertCountEl = document.getElementById('alert-count');
-const savedInfoEl  = document.getElementById('saved-info');
-const debugEl      = document.getElementById('debug-info');
+const alertCountEl   = document.getElementById('alert-count');
+const savedInfoEl    = document.getElementById('saved-info');
+const debugEl        = document.getElementById('debug-info');
+const sensitivityEl  = document.getElementById('sensitivity');
+const sensitivityVal = document.getElementById('sensitivity-val');
 
 // ---- localStorage ----
 function saveCalib() {
@@ -176,9 +216,13 @@ function setPhaseUI(p, msg) {
   if (msg !== undefined) message.textContent = msg;
 }
 
+function effectiveThreshold() {
+  return threshold * sensitivityToMultiplier(parseInt(sensitivityEl.value));
+}
+
 function updateThreshInfo() {
   threshInfo.textContent =
-    `閾値: ${threshold.toFixed(5)}（環境音: ${noiseFloor.toFixed(5)}）`;
+    `有効閾値: ${effectiveThreshold().toFixed(5)}（環境音: ${noiseFloor.toFixed(5)}）`;
 }
 
 // ---- キャリブレーション ----
@@ -261,14 +305,15 @@ function startLoop() {
     const energy = Math.sqrt(sum / dataArray.length);
 
     // バー更新
-    const ref = threshold > 0 ? threshold * 1.5 : 0.01;
+    const eff = effectiveThreshold();
+    const ref = eff > 0 ? eff * 1.5 : 0.01;
     levelBar.style.width = Math.min(energy / ref * 100, 100) + '%';
-    levelBar.className   = energy > threshold ? 'over' : '';
+    levelBar.className   = energy > eff ? 'over' : '';
 
     // デバッグ表示
     debugEl.textContent =
       `loop#${loopCount}  energy: ${energy.toFixed(6)}\n` +
-      `threshold: ${threshold.toFixed(6)}  noise: ${noiseFloor.toFixed(6)}`;
+      `threshold: ${eff.toFixed(6)}  noise: ${noiseFloor.toFixed(6)}`;
 
     // キャリブレーション中はサンプル蓄積
     if (phase === 'calibrating') {
@@ -280,7 +325,7 @@ function startLoop() {
 
     // 発話検出
     const now = Date.now();
-    if (energy > threshold) {
+    if (energy > eff) {
       if (!speechStart) speechStart = now;
       if (now - speechStart >= SPEECH_HOLD_MS && now - lastAlertTime > ALERT_COOLDOWN_MS) {
         lastAlertTime = now;
@@ -302,8 +347,22 @@ function startLoop() {
   }, 100);
 }
 
+// ---- 感度スライダー ----
+sensitivityEl.addEventListener('input', () => {
+  const v = parseInt(sensitivityEl.value);
+  sensitivityVal.textContent = SENSITIVITY_LABELS[v];
+  localStorage.setItem(SENSITIVITY_KEY, v);
+  if (threshold > 0) updateThreshInfo();
+});
+
 // ---- 起動時チェック ----
 window.addEventListener('load', () => {
+  const savedSens = localStorage.getItem(SENSITIVITY_KEY);
+  if (savedSens) {
+    sensitivityEl.value = savedSens;
+  }
+  sensitivityVal.textContent = SENSITIVITY_LABELS[parseInt(sensitivityEl.value)];
+
   const saved = loadCalib();
   if (saved) {
     savedInfoEl.textContent = `前回の設定: ${saved.savedAt}`;
