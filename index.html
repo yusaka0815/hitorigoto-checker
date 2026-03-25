@@ -111,7 +111,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div style="font-size:0.7rem;color:#555;margin-top:-24px;margin-bottom:24px;">v1.1.4</div>
+  <div style="font-size:0.7rem;color:#555;margin-top:-24px;margin-bottom:24px;">v1.1.5</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -241,10 +241,10 @@ function analyse() {
   if (phase === 'idle') return;
 
   const dataArray  = new Uint8Array(analyser.fftSize);
-  const sampleRate = audioCtx.sampleRate;
+  let loopCount = 0;
 
   function loop() {
-    animFrame = requestAnimationFrame(loop);
+    loopCount++;
     analyser.getByteTimeDomainData(dataArray);
 
     // 時間領域RMSでエネルギー計算（128が無音基準）
@@ -263,7 +263,7 @@ function analyse() {
     // デバッグ: エネルギー値をリアルタイム表示
     const dbg = document.getElementById('debug-info');
     dbg.textContent = (dbg.dataset.base || '') +
-      `\nenergy: ${energy.toFixed(6)}\nthreshold: ${threshold.toFixed(6)}`;
+      `\nloop#${loopCount} energy: ${energy.toFixed(6)}\nthreshold: ${threshold.toFixed(6)}`;
 
     // キャリブレーション中はサンプルを蓄積
     if (phase === 'calibrating') {
@@ -298,7 +298,7 @@ function analyse() {
       speechStart = null;
     }
   }
-  loop();
+  animFrame = setInterval(loop, 100); // 100ms間隔（requestAnimationFrameの代替）
 }
 
 // ---- 開始 ----
@@ -351,7 +351,7 @@ startBtn.addEventListener('click', async () => {
 
 // ---- 停止 ----
 stopBtn.addEventListener('click', () => {
-  cancelAnimationFrame(animFrame);
+  clearInterval(animFrame);
   clearInterval(calibTimer);
   clearTimeout(recalibTimer);
   if (micStream) micStream.getTracks().forEach(t => t.stop());
