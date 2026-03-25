@@ -111,7 +111,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div style="font-size:0.7rem;color:#555;margin-top:-24px;margin-bottom:24px;">v1.1.3</div>
+  <div style="font-size:0.7rem;color:#555;margin-top:-24px;margin-bottom:24px;">v1.1.4</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -138,8 +138,8 @@
 <script>
 // ---- 設定 ----
 const CALIBRATION_SEC    = 4;      // キャリブレーション秒数
-const THRESHOLD_FACTOR   = 3.5;    // ベースラインの何倍を閾値にするか
-const MIN_THRESHOLD      = 0.01;   // 最低閾値（静かすぎる環境対策）
+const THRESHOLD_FACTOR   = 4.0;    // ベースラインの何倍を閾値にするか
+const MIN_THRESHOLD      = 0.005;  // 最低閾値（静かすぎる環境対策）
 const SPEECH_HOLD_MS     = 1200;   // 発話判定の持続時間 (ms)
 const ALERT_COOLDOWN_MS  = 5000;   // アラート後のクールダウン (ms)
 const RECALIB_INTERVAL_MS = 60000; // 自動再キャリブレーション間隔 (ms)
@@ -184,19 +184,6 @@ function beep(freq = 880, dur = 0.25, vol = 0.6) {
   osc.stop(beepCtx.currentTime + dur);
 }
 
-// ---- 音量取得（声の周波数帯に絞る） ----
-function getSpeechEnergy(dataArray, sampleRate) {
-  // 200〜3000Hz の範囲のみ集計
-  const binSize  = sampleRate / analyser.fftSize;
-  const lowBin   = Math.floor(200  / binSize);
-  const highBin  = Math.min(Math.floor(3000 / binSize), dataArray.length - 1);
-  let sum = 0;
-  for (let i = lowBin; i <= highBin; i++) {
-    const v = dataArray[i] / 255.0;
-    sum += v * v;
-  }
-  return Math.sqrt(sum / (highBin - lowBin + 1));
-}
 
 // ---- UIの更新 ----
 function setPhaseUI(p, msg) {
@@ -253,13 +240,20 @@ function finishCalibration() {
 function analyse() {
   if (phase === 'idle') return;
 
-  const dataArray  = new Uint8Array(analyser.frequencyBinCount);
+  const dataArray  = new Uint8Array(analyser.fftSize);
   const sampleRate = audioCtx.sampleRate;
 
   function loop() {
     animFrame = requestAnimationFrame(loop);
-    analyser.getByteFrequencyData(dataArray);
-    const energy = getSpeechEnergy(dataArray, sampleRate);
+    analyser.getByteTimeDomainData(dataArray);
+
+    // 時間領域RMSでエネルギー計算（128が無音基準）
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      const v = (dataArray[i] - 128) / 128;
+      sum += v * v;
+    }
+    const energy = Math.sqrt(sum / dataArray.length);
 
     // バーの更新
     const pct = Math.min((energy / (threshold * 1.5)) * 100, 100);
