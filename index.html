@@ -96,15 +96,13 @@
 
     #alert-count { margin-top: 4px; font-size: 0.85rem; color: #888; }
     #saved-info  { font-size: 0.72rem; color: #4a8; margin-top: 6px; }
-    #debug-info  {
-      margin-top: 12px; font-size: 0.68rem; color: #555;
-      width: 100%; max-width: 320px; line-height: 1.9;
-    }
+    #calib-result { font-size: 0.78rem; color: #888; margin-top: 8px; line-height: 1.8; text-align: center; }
+    #wake-lock-status { font-size: 0.68rem; color: #444; margin-top: 12px; }
   </style>
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.3.4</div>
+  <div class="version">v1.4.0</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -135,8 +133,9 @@
 
   <div id="count-dots"></div>
   <div id="alert-count">アラート回数: 0</div>
+  <div id="calib-result"></div>
   <div id="saved-info"></div>
-  <div id="debug-info"></div>
+  <div id="wake-lock-status"></div>
 
 <script>
 // ---- 定数 ----
@@ -193,9 +192,11 @@ const resetBtn       = document.getElementById('reset-btn');
 const alertCountEl   = document.getElementById('alert-count');
 const savedInfoEl    = document.getElementById('saved-info');
 const debugEl        = document.getElementById('debug-info');
-const sensitivityEl  = document.getElementById('sensitivity');
-const sensitivityVal = document.getElementById('sensitivity-val');
-const countDotsEl    = document.getElementById('count-dots');
+const sensitivityEl   = document.getElementById('sensitivity');
+const sensitivityVal  = document.getElementById('sensitivity-val');
+const countDotsEl     = document.getElementById('count-dots');
+const calibResultEl   = document.getElementById('calib-result');
+const wakeLockStatusEl = document.getElementById('wake-lock-status');
 
 // ---- localStorage ----
 function saveCalib() {
@@ -244,6 +245,37 @@ function effectiveThreshold() {
   return threshold * sensitivityMultiplier(parseInt(sensitivityEl.value));
 }
 
+// ---- Wake Lock ----
+let wakeLock = null;
+
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) {
+    wakeLockStatusEl.textContent = '※ このブラウザはスクリーン常時点灯に非対応です';
+    return;
+  }
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLockStatusEl.textContent = '画面常時点灯：有効';
+    wakeLock.addEventListener('release', () => {
+      wakeLockStatusEl.textContent = '画面常時点灯：解除されました';
+    });
+  } catch (e) {
+    wakeLockStatusEl.textContent = '画面常時点灯：取得できませんでした';
+  }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+  wakeLockStatusEl.textContent = '';
+}
+
+// 画面が非表示→再表示されたとき再取得
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && wakeLock === null && phase !== 'idle') {
+    await requestWakeLock();
+  }
+});
+
 // ---- カウントドット ----
 function initDots() {
   countDotsEl.innerHTML = '';
@@ -274,11 +306,19 @@ function updateCountUI(count) {
 }
 
 function updateThreshInfo() {
-  const pitchStr = voicePitchMean > 0
-    ? `  声:${Math.round(voicePitchMean)}Hz±${PITCH_MARGIN_HZ}Hz`
-    : '';
-  threshInfo.textContent =
-    `有効閾値: ${effectiveThreshold().toFixed(5)}（環境音: ${noiseFloor.toFixed(5)}）${pitchStr}`;
+  // 閾値バーの表示（数値は内部的に使うが、UIには出さない）
+  threshInfo.textContent = '';
+}
+
+function updateCalibResult() {
+  const noiseLabel = noiseFloor < 0.01 ? '静か' : noiseFloor < 0.03 ? 'やや静か' : 'やや騒がしい';
+  const pitchLabel = voicePitchMean > 0
+    ? `${Math.round(voicePitchMean)}Hz付近` : '未取得（音量のみで判定）';
+  const voiceGap = threshold - noiseFloor;
+  const qualityLabel = voiceGap > noiseFloor * 2 ? 'しっかり取れました' :
+                       voiceGap > noiseFloor      ? 'まずまず取れました' : '取得が不十分かもしれません';
+  calibResultEl.textContent =
+    `環境音：${noiseLabel}　声：${qualityLabel}\nピッチ：${pitchLabel}`;
 }
 
 // ---- ピッチ検出（FFT周波数データから） ----
@@ -371,6 +411,7 @@ function finishCalibration() {
   }
 
   updateThreshInfo();
+  updateCalibResult();
   saveCalib();
   initDots();
   setPhaseUI('watching', '監視中です\n独り言を検出したらアラートします');
@@ -454,12 +495,6 @@ function startLoop() {
     const count = speechSegments.length;
     updateCountUI(count);
 
-    // デバッグ
-    debugEl.textContent =
-      `#${loopCount}  energy:${energy.toFixed(5)}  eff:${eff.toFixed(5)}\n` +
-      `pitch:${pitchResult ? Math.round(pitchResult.pitchHz)+'Hz' : '—'}  ` +
-      `倍音:${pitchResult ? pitchResult.harmonicStrength.toFixed(2) : '—'}\n` +
-      `voiceOK:${voiceOk}  発声回数:${count}/${SPEECH_COUNT_ALERT}回`;
 
     if (count >= SPEECH_COUNT_ALERT && now - lastAlertTime > ALERT_COOLDOWN_MS) {
       lastAlertTime  = now;
@@ -526,6 +561,7 @@ startBtn.addEventListener('click', async () => {
     stopBtn.disabled    = false;
     recalibBtn.disabled = false;
 
+    await requestWakeLock();
     startLoop();
 
     const saved = loadCalib();
@@ -534,6 +570,7 @@ startBtn.addEventListener('click', async () => {
       threshold      = saved.threshold;
       voicePitchMean = saved.voicePitchMean || 0;
       updateThreshInfo();
+      updateCalibResult();
       initDots();
       setPhaseUI('watching', '前回の設定で監視中です\n独り言を検出したらアラートします');
     } else {
@@ -555,6 +592,7 @@ stopBtn.addEventListener('click', () => {
   audioCtx = analyser = micStream = null;
   segmentStart = null;
   speechSegments = [];
+  releaseWakeLock();
   startBtn.disabled   = false;
   stopBtn.disabled    = true;
   recalibBtn.disabled = true;
