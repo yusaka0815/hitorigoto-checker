@@ -111,7 +111,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div style="font-size:0.7rem;color:#555;margin-top:-24px;margin-bottom:24px;">v1.1.5</div>
+  <div style="font-size:0.7rem;color:#555;margin-top:-24px;margin-bottom:24px;">v1.1.6</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -340,8 +340,8 @@ startBtn.addEventListener('click', async () => {
       `Mic: ${tracks[0]?.readyState} / enabled:${tracks[0]?.enabled}`;
     dbg.textContent = dbg.dataset.base;
 
-    analyse();
     startCalibration();
+    analyse();
   } catch (e) {
     message.textContent = 'マイクへのアクセスが拒否されました。\nブラウザの設定を確認してください。';
     document.getElementById('debug-info').textContent = 'エラー: ' + e.message;
