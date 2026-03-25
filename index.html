@@ -107,6 +107,22 @@
     .count-dot.active-2 { background: #8a5a1a; border-color: #ff9800; }
     .count-dot.active-3 { background: #8a1a1a; border-color: #f44336; }
 
+    #voice-prompt {
+      display: none;
+      background: #1e2a1e; border: 1px solid #3a5a3a; border-radius: 10px;
+      padding: 10px 16px; margin-bottom: 8px;
+      width: 100%; max-width: 340px; flex-shrink: 0;
+    }
+    #voice-prompt .prompt-label { font-size: clamp(0.68rem, 2.2vw, 0.75rem); color: #6a8; margin-bottom: 6px; }
+    #voice-prompt .prompt-text  { font-size: clamp(0.9rem, 3vw, 1rem); color: #cec; line-height: 1.7; }
+    #voice-progress-wrap {
+      display: none; width: 100%; max-width: 340px;
+      margin-bottom: 6px; flex-shrink: 0;
+    }
+    #voice-progress-label { font-size: clamp(0.7rem, 2.2vw, 0.78rem); color: #6a8; margin-bottom: 3px; }
+    #voice-progress-bg { background: #333; border-radius: 4px; height: 8px; overflow: hidden; }
+    #voice-progress-bar { height: 100%; width: 0%; background: #4caf50; border-radius: 4px; transition: width 0.2s; }
+
     #alert-count  { font-size: clamp(0.8rem, 2.8vw, 0.9rem); color: #999; flex-shrink: 0; }
     #calib-result { font-size: clamp(0.72rem, 2.5vw, 0.8rem); color: #888; margin-top: 5px; line-height: 1.8; text-align: center; flex-shrink: 0; }
     #saved-info   { font-size: clamp(0.68rem, 2.2vw, 0.75rem); color: #4a8; margin-top: 4px; flex-shrink: 0; }
@@ -115,7 +131,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.5.5</div>
+  <div class="version">v1.6.0</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -146,6 +162,15 @@
     <button id="reset-btn">設定リセット</button>
   </div>
 
+  <div id="voice-prompt">
+    <div class="prompt-label">以下の文を声に出して読んでください</div>
+    <div class="prompt-text">「今日もよろしくお願いします。<br>ちょっと待って。なるほどね。」</div>
+  </div>
+  <div id="voice-progress-wrap">
+    <div id="voice-progress-label">サンプル収集中... 0/25</div>
+    <div id="voice-progress-bg"><div id="voice-progress-bar"></div></div>
+  </div>
+
   <div id="count-dots"></div>
   <div id="alert-count">アラート回数: 0</div>
   <div id="calib-result"></div>
@@ -154,9 +179,11 @@
 
 <script>
 // ---- 定数 ----
-const NOISE_SEC         = 4;
-const VOICE_SEC         = 5;
-const SPEECH_HOLD_MS    = 1200;
+const NOISE_SEC            = 4;
+const VOICE_MIN_SAMPLES    = 25;  // 完了に必要な有効ピッチサンプル数
+const VOICE_MIN_SEC        = 2;   // 最短キャリブレーション時間（秒）
+const VOICE_MAX_SEC        = 15;  // タイムアウト（秒）
+const SPEECH_HOLD_MS       = 1200;
 const ALERT_COOLDOWN_MS = 5000;
 const STORAGE_KEY       = 'hitorigoto_calib';
 const SENSITIVITY_KEY   = 'hitorigoto_sensitivity';
@@ -209,8 +236,12 @@ const debugEl        = document.getElementById('debug-info');
 const sensitivityEl   = document.getElementById('sensitivity');
 const sensitivityVal  = document.getElementById('sensitivity-val');
 const countDotsEl     = document.getElementById('count-dots');
-const calibResultEl   = document.getElementById('calib-result');
-const wakeLockStatusEl = document.getElementById('wake-lock-status');
+const calibResultEl      = document.getElementById('calib-result');
+const wakeLockStatusEl   = document.getElementById('wake-lock-status');
+const voicePromptEl      = document.getElementById('voice-prompt');
+const voiceProgressWrap  = document.getElementById('voice-progress-wrap');
+const voiceProgressLabel = document.getElementById('voice-progress-label');
+const voiceProgressBar   = document.getElementById('voice-progress-bar');
 
 // ---- localStorage ----
 function saveCalib() {
@@ -364,10 +395,14 @@ function detectPitch(freqData, sampleRate, fftSize) {
 }
 
 // ---- キャリブレーション ----
+let voiceCalibStart = 0; // 声フェーズ開始時刻
+
 function startCalibration() {
   noiseSamples       = [];
   voicePitchSamples  = [];
   voiceEnergySamples = [];
+  voicePromptEl.style.display     = 'none';
+  voiceProgressWrap.style.display = 'none';
   calibStep = 'noise';
   setPhaseUI('calibrating', `静かにしてください…\n環境音を計測中（${NOISE_SEC}秒）`);
 
@@ -389,21 +424,25 @@ function startCalibration() {
     }
     // 声フェーズへ
     calibStep = 'voice';
-    setPhaseUI('calibrating', `今度は普通に話してください\n声を計測中（${VOICE_SEC}秒）`);
-    let rem2 = VOICE_SEC;
-    calibTimer = setInterval(() => {
-      rem2--;
-      if (rem2 > 0) message.textContent = `今度は普通に話してください\n声を計測中（${rem2}秒）`;
-    }, 1000);
-    setTimeout(() => {
-      clearInterval(calibTimer);
-      finishCalibration();
-    }, VOICE_SEC * 1000);
+    voiceCalibStart = Date.now();
+    setPhaseUI('calibrating', '下の文を声に出して読んでください');
+    voicePromptEl.style.display     = 'block';
+    voiceProgressWrap.style.display = 'block';
+    voiceProgressLabel.textContent  = `サンプル収集中... 0/${VOICE_MIN_SAMPLES}`;
+    voiceProgressBar.style.width    = '0%';
+
+    // タイムアウト保険
+    calibTimer = setTimeout(() => {
+      if (calibStep === 'voice') finishCalibration();
+    }, VOICE_MAX_SEC * 1000);
   }, NOISE_SEC * 1000);
 }
 
 function finishCalibration() {
   calibStep = null;
+  clearTimeout(calibTimer);
+  voicePromptEl.style.display     = 'none';
+  voiceProgressWrap.style.display = 'none';
 
   // 音量閾値
   const voiceEnergy = voiceEnergySamples.length > 0
@@ -483,6 +522,17 @@ function startLoop() {
         voiceEnergySamples.push(energy);
         if (pitchResult && pitchResult.harmonicStrength > 0.1) {
           voicePitchSamples.push(pitchResult.pitchHz);
+        }
+        // 進捗表示
+        const count = voicePitchSamples.length;
+        const pct   = Math.min(count / VOICE_MIN_SAMPLES * 100, 100);
+        voiceProgressBar.style.width   = pct + '%';
+        voiceProgressLabel.textContent = `サンプル収集中... ${count}/${VOICE_MIN_SAMPLES}`;
+
+        // 十分なサンプルが集まり、かつ最短時間を過ぎたら自動完了
+        const elapsed = Date.now() - voiceCalibStart;
+        if (count >= VOICE_MIN_SAMPLES && elapsed >= VOICE_MIN_SEC * 1000) {
+          finishCalibration();
         }
       }
       return;
