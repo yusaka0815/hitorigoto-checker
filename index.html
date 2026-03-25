@@ -111,7 +111,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div style="font-size:0.7rem;color:#555;margin-top:-24px;margin-bottom:24px;">v1.1.1</div>
+  <div style="font-size:0.7rem;color:#555;margin-top:-24px;margin-bottom:24px;">v1.1.2</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -266,6 +266,14 @@ function analyse() {
     levelBar.style.width = pct + '%';
     levelBar.className   = energy > threshold ? 'over' : '';
 
+    // デバッグ: エネルギー値をリアルタイム表示
+    const dbg = document.getElementById('debug-info');
+    if (dbg) {
+      const lines = dbg.textContent.split('\n').slice(0, 5);
+      lines[5] = `energy: ${energy.toFixed(6)} / threshold: ${threshold.toFixed(6)}`;
+      dbg.textContent = lines.join('\n');
+    }
+
     // キャリブレーション中はサンプルを蓄積
     if (phase === 'calibrating') {
       calibSamples.push(energy);
@@ -323,6 +331,12 @@ startBtn.addEventListener('click', async () => {
 
     const source = audioCtx.createMediaStreamSource(micStream);
     source.connect(analyser);
+
+    // Androidで音声グラフが止まらないよう無音で出力に接続
+    const silentGain = audioCtx.createGain();
+    silentGain.gain.value = 0;
+    analyser.connect(silentGain);
+    silentGain.connect(audioCtx.destination);
 
     startBtn.disabled      = true;
     stopBtn.disabled       = false;
