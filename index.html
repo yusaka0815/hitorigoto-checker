@@ -89,7 +89,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.3.0</div>
+  <div class="version">v1.3.1</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -137,6 +137,11 @@ const PITCH_MAX_HZ      = 350;
 // キャリブレーションしたピッチへの許容マージン（Hz）
 const PITCH_MARGIN_HZ   = 80;
 
+// 断続発声検出
+const SPEECH_WINDOW_MS     = 3000; // 判定ウィンドウ（秒）
+const SPEECH_CUMULATIVE_MS = 600;  // ウィンドウ内の合計発声時間がこれ以上でアラート
+const SPEECH_MIN_SEG_MS    = 150;  // 1セグメントの最小継続時間（短すぎるノイズを除外）
+
 // 感度スライダー値 → 閾値乗数（1=鈍感×2.0、4=標準×1.0、7=敏感×0.4）
 function sensitivityMultiplier(v) {
   return 2.0 - (v - 1) * (1.6 / 6);
@@ -151,7 +156,9 @@ let audioCtx = null, analyser = null, micStream = null;
 let loopTimer = null, calibTimer = null, recalibTimer = null, beepCtx = null;
 let noiseFloor = 0, threshold = 0;
 let voicePitchMean = 0;   // キャリブ済みピッチ（Hz）
-let speechStart = null, lastAlertTime = 0, alertCount = 0;
+let segmentStart = null;       // 現在の発声セグメント開始時刻
+let speechSegments = [];       // 過去セグメント [{end, duration}]
+let lastAlertTime = 0, alertCount = 0;
 let calibStep = null;     // 'noise' | 'voice' | null
 let noiseSamples = [], voicePitchSamples = [], voiceEnergySamples = [];
 let phase = 'idle';
@@ -363,14 +370,7 @@ function startLoop() {
     }
     levelBar.className = voiceOk ? 'over' : '';
 
-    // デバッグ
-    const pitchStr = pitchResult
-      ? `${Math.round(pitchResult.pitchHz)}Hz (倍音:${pitchResult.harmonicStrength.toFixed(2)})`
-      : '—';
-    debugEl.textContent =
-      `#${loopCount}  energy:${energy.toFixed(5)}  eff:${eff.toFixed(5)}\n` +
-      `pitch:${pitchStr}  calibPitch:${Math.round(voicePitchMean)}Hz\n` +
-      `energyOK:${energyOk}  voiceOK:${voiceOk}`;
+    // デバッグ（発声累計は検出ロジック内で更新）
 
     // キャリブレーション中はサンプル蓄積
     if (phase === 'calibrating') {
@@ -386,26 +386,48 @@ function startLoop() {
     }
     if (phase !== 'watching' && phase !== 'detected') return;
 
-    // 発話検出
+    // 発話検出（断続発声対応）
     const now = Date.now();
     if (voiceOk) {
-      if (!speechStart) speechStart = now;
-      if (now - speechStart >= SPEECH_HOLD_MS && now - lastAlertTime > ALERT_COOLDOWN_MS) {
-        lastAlertTime = now;
-        speechStart   = null;
-        alertCount++;
-        alertCountEl.textContent = `アラート回数: ${alertCount}`;
-        beep(880, 0.15);
-        setTimeout(() => beep(880, 0.15), 180);
-        setTimeout(() => beep(1100, 0.2), 360);
-        setPhaseUI('detected', '⚠️ 独り言を検出しました');
-        setTimeout(() => {
-          if (phase === 'detected')
-            setPhaseUI('watching', '監視中です\n独り言を検出したらアラートします');
-        }, 3000);
-      }
+      if (!segmentStart) segmentStart = now;
     } else {
-      speechStart = null;
+      if (segmentStart) {
+        const dur = now - segmentStart;
+        if (dur >= SPEECH_MIN_SEG_MS) {
+          speechSegments.push({ end: now, duration: dur });
+        }
+        segmentStart = null;
+      }
+    }
+
+    // ウィンドウ外のセグメントを削除
+    speechSegments = speechSegments.filter(s => now - s.end < SPEECH_WINDOW_MS);
+
+    // ウィンドウ内の合計発声時間（進行中セグメントも含む）
+    const currentDur = segmentStart ? (now - segmentStart) : 0;
+    const totalSpeech = speechSegments.reduce((a, s) => a + s.duration, 0) + currentDur;
+
+    // デバッグに発声合計時間を追加
+    debugEl.textContent =
+      `#${loopCount}  energy:${energy.toFixed(5)}  eff:${eff.toFixed(5)}\n` +
+      `pitch:${pitchResult ? Math.round(pitchResult.pitchHz)+'Hz' : '—'}  ` +
+      `倍音:${pitchResult ? pitchResult.harmonicStrength.toFixed(2) : '—'}\n` +
+      `voiceOK:${voiceOk}  累計発声:${totalSpeech}ms/${SPEECH_CUMULATIVE_MS}ms`;
+
+    if (totalSpeech >= SPEECH_CUMULATIVE_MS && now - lastAlertTime > ALERT_COOLDOWN_MS) {
+      lastAlertTime  = now;
+      segmentStart   = null;
+      speechSegments = [];
+      alertCount++;
+      alertCountEl.textContent = `アラート回数: ${alertCount}`;
+      beep(880, 0.15);
+      setTimeout(() => beep(880, 0.15), 180);
+      setTimeout(() => beep(1100, 0.2), 360);
+      setPhaseUI('detected', '⚠️ 独り言を検出しました');
+      setTimeout(() => {
+        if (phase === 'detected')
+          setPhaseUI('watching', '監視中です\n独り言を検出したらアラートします');
+      }, 3000);
     }
   }, 100);
 }
@@ -483,7 +505,8 @@ stopBtn.addEventListener('click', () => {
   if (micStream) micStream.getTracks().forEach(t => t.stop());
   if (audioCtx)  audioCtx.close();
   audioCtx = analyser = micStream = null;
-  speechStart = null;
+  segmentStart = null;
+  speechSegments = [];
   startBtn.disabled   = false;
   stopBtn.disabled    = true;
   recalibBtn.disabled = true;
