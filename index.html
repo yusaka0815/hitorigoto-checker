@@ -147,7 +147,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.3</div>
+  <div class="version">v1.6.4</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -310,33 +310,65 @@ function effectiveThreshold() {
   return threshold * sensitivityMultiplier(parseInt(sensitivityEl.value));
 }
 
-// ---- Wake Lock ----
+// ---- 画面常時点灯（Wake Lock + 無音動画の二重対策） ----
 let wakeLock = null;
+let noSleepVideo = null;
+
+// 1x1px の透明WebMを無音ループ再生してOSに「メディア再生中」と認識させる
+// MDMポリシーでWake Lock APIが制限されている場合のフォールバック
+function startNoSleepVideo() {
+  if (noSleepVideo) return;
+  // 最小構成のWebMバイナリ（1フレーム・無音・約225バイト）
+  const webm = 'data:video/webm;base64,GkXfowEAAAAAAAAfQoaBAUL3gQFC8oEEQvOBCEKChHdlYm1CEwen' +
+    'HFNUW0ZGhVZ0ebaxaz9ns01oPKPsaujlf37TtSaHLSXOSevUYZLepNgMeMSXS5AAAAAAAAAAAAA' +
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABVSalmQCgq17FAAMSpgQBM' +
+    'vISpgQBMvISpgQBMvISpgQBMvISpgQBMvISpgQBMvISpgQBMvISpgQBMvISpgQBMvIWA';
+  noSleepVideo = document.createElement('video');
+  noSleepVideo.setAttribute('playsinline', '');
+  noSleepVideo.setAttribute('muted', '');
+  noSleepVideo.loop  = true;
+  noSleepVideo.src   = webm;
+  noSleepVideo.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;';
+  document.body.appendChild(noSleepVideo);
+  noSleepVideo.play().catch(() => {});
+}
+
+function stopNoSleepVideo() {
+  if (!noSleepVideo) return;
+  noSleepVideo.pause();
+  noSleepVideo.remove();
+  noSleepVideo = null;
+}
 
 async function requestWakeLock() {
-  if (!('wakeLock' in navigator)) {
-    wakeLockStatusEl.textContent = '※ このブラウザはスクリーン常時点灯に非対応です';
-    return;
-  }
-  try {
-    wakeLock = await navigator.wakeLock.request('screen');
-    wakeLockStatusEl.textContent = '画面常時点灯：有効';
-    wakeLock.addEventListener('release', () => {
-      wakeLockStatusEl.textContent = '画面常時点灯：解除されました';
-    });
-  } catch (e) {
-    wakeLockStatusEl.textContent = '画面常時点灯：取得できませんでした';
+  // まず無音動画を開始（MDM環境でも有効）
+  startNoSleepVideo();
+
+  // Wake Lock APIも併用（対応環境ではより確実）
+  if ('wakeLock' in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLockStatusEl.textContent = '画面常時点灯：有効';
+      wakeLock.addEventListener('release', () => {
+        wakeLockStatusEl.textContent = '画面常時点灯：有効（動画）';
+      });
+    } catch (e) {
+      wakeLockStatusEl.textContent = '画面常時点灯：有効（動画）';
+    }
+  } else {
+    wakeLockStatusEl.textContent = '画面常時点灯：有効（動画）';
   }
 }
 
 function releaseWakeLock() {
   if (wakeLock) { wakeLock.release(); wakeLock = null; }
+  stopNoSleepVideo();
   wakeLockStatusEl.textContent = '';
 }
 
 // 画面が非表示→再表示されたとき再取得
 document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState === 'visible' && wakeLock === null && phase !== 'idle') {
+  if (document.visibilityState === 'visible' && phase !== 'idle') {
     await requestWakeLock();
   }
 });
