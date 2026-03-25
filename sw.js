@@ -1,4 +1,4 @@
-const CACHE = 'hitorigoto-v1';
+const CACHE = 'hitorigoto-v2'; // バージョンを上げて古いキャッシュを強制削除
 const FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -13,10 +13,10 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// ネットワーク優先：オンライン時は最新版を取得、失敗時はキャッシュを使用
+// ネットワーク優先 + HTTPキャッシュを無効化
 self.addEventListener('fetch', e => {
   e.respondWith(
-    fetch(e.request)
+    fetch(new Request(e.request, { cache: 'no-cache' }))
       .then(res => {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
