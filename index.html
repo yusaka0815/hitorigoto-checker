@@ -111,7 +111,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div style="font-size:0.7rem;color:#555;margin-top:-24px;margin-bottom:24px;">v1.1.2</div>
+  <div style="font-size:0.7rem;color:#555;margin-top:-24px;margin-bottom:24px;">v1.1.3</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -268,11 +268,8 @@ function analyse() {
 
     // デバッグ: エネルギー値をリアルタイム表示
     const dbg = document.getElementById('debug-info');
-    if (dbg) {
-      const lines = dbg.textContent.split('\n').slice(0, 5);
-      lines[5] = `energy: ${energy.toFixed(6)} / threshold: ${threshold.toFixed(6)}`;
-      dbg.textContent = lines.join('\n');
-    }
+    dbg.textContent = (dbg.dataset.base || '') +
+      `\nenergy: ${energy.toFixed(6)}\nthreshold: ${threshold.toFixed(6)}`;
 
     // キャリブレーション中はサンプルを蓄積
     if (phase === 'calibrating') {
@@ -344,12 +341,10 @@ startBtn.addEventListener('click', async () => {
 
     const tracks = micStream.getAudioTracks();
     const dbg = document.getElementById('debug-info');
-    dbg.textContent =
-      `AudioCtx状態: ${audioCtx.state}\n` +
-      `サンプルレート: ${audioCtx.sampleRate}Hz\n` +
-      `マイクトラック数: ${tracks.length}\n` +
-      `トラック状態: ${tracks[0]?.readyState}\n` +
-      `トラック有効: ${tracks[0]?.enabled}`;
+    dbg.dataset.base =
+      `AudioCtx: ${audioCtx.state} / ${audioCtx.sampleRate}Hz\n` +
+      `Mic: ${tracks[0]?.readyState} / enabled:${tracks[0]?.enabled}`;
+    dbg.textContent = dbg.dataset.base;
 
     analyse();
     startCalibration();
