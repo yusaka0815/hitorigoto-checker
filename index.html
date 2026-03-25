@@ -115,7 +115,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.5.4</div>
+  <div class="version">v1.5.5</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -625,16 +625,32 @@ recalibBtn.addEventListener('click', () => {
 
 // ---- 設定リセット ----
 resetBtn.addEventListener('click', () => {
+  // 起動中なら停止
+  if (phase !== 'idle') {
+    clearInterval(loopTimer);
+    clearInterval(calibTimer);
+    if (micStream) micStream.getTracks().forEach(t => t.stop());
+    if (audioCtx)  audioCtx.close();
+    audioCtx = analyser = micStream = null;
+    segmentStart = null;
+    speechSegments = [];
+    releaseWakeLock();
+    startBtn.disabled   = false;
+    stopBtn.disabled    = true;
+    recalibBtn.disabled = true;
+    levelBar.style.width = '0%';
+    countDotsEl.innerHTML = '';
+  }
+
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(SENSITIVITY_KEY);
   noiseFloor = 0; threshold = 0; voicePitchMean = 0;
   sensitivityEl.value = 4;
   sensitivityVal.textContent = SENSITIVITY_LABELS[4];
-  savedInfoEl.textContent = '';
-  threshInfo.textContent  = '閾値: —';
-  message.textContent = phase === 'idle'
-    ? '設定をリセットしました\n「開始」でキャリブレーションを行います'
-    : '設定をリセットしました\n「再キャリブレーション」で再設定できます';
+  savedInfoEl.textContent  = '';
+  calibResultEl.textContent = '';
+  threshInfo.textContent   = '閾値: —';
+  setPhaseUI('idle', '設定をリセットしました\n「開始」でキャリブレーションを行います');
 });
 
 // ---- サービスワーカー登録 ----
