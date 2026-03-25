@@ -13,8 +13,15 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// ネットワーク優先：オンライン時は最新版を取得、失敗時はキャッシュを使用
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    fetch(e.request)
+      .then(res => {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
