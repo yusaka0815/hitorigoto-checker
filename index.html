@@ -113,7 +113,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.5.0</div>
+  <div class="version">v1.5.1</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -460,9 +460,14 @@ function startLoop() {
     // 声判定：音量 AND ピッチ（ピッチキャリブ済みの場合）
     const energyOk = energy > eff;
     let voiceOk = energyOk;
-    if (energyOk && voicePitchMean > 0 && pitchResult) {
-      const pitchDiff = Math.abs(pitchResult.pitchHz - voicePitchMean);
-      voiceOk = pitchDiff <= PITCH_MARGIN_HZ && pitchResult.harmonicStrength > 0.15;
+    if (energyOk && voicePitchMean > 0) {
+      if (!pitchResult) {
+        // 声の周波数帯にピッチが検出できなかった → 声ではない
+        voiceOk = false;
+      } else {
+        const pitchDiff = Math.abs(pitchResult.pitchHz - voicePitchMean);
+        voiceOk = pitchDiff <= PITCH_MARGIN_HZ && pitchResult.harmonicStrength > 0.15;
+      }
     }
     levelBar.className = voiceOk ? 'over' : '';
 
