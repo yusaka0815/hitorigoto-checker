@@ -131,7 +131,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.0</div>
+  <div class="version">v1.6.1</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -180,9 +180,9 @@
 <script>
 // ---- 定数 ----
 const NOISE_SEC            = 4;
-const VOICE_MIN_SAMPLES    = 25;  // 完了に必要な有効ピッチサンプル数
-const VOICE_MIN_SEC        = 2;   // 最短キャリブレーション時間（秒）
-const VOICE_MAX_SEC        = 15;  // タイムアウト（秒）
+const VOICE_MIN_SAMPLES    = 60;  // 完了に必要な有効ピッチサンプル数
+const VOICE_MIN_SEC        = 5;   // 最短キャリブレーション時間（秒）
+const VOICE_MAX_SEC        = 20;  // タイムアウト（秒）
 const SPEECH_HOLD_MS       = 1200;
 const ALERT_COOLDOWN_MS = 5000;
 const STORAGE_KEY       = 'hitorigoto_calib';
@@ -356,12 +356,12 @@ function updateThreshInfo() {
 }
 
 function updateCalibResult() {
-  const noiseLabel = noiseFloor < 0.01 ? '静か' : noiseFloor < 0.03 ? 'やや静か' : 'やや騒がしい';
-  const pitchLabel = voicePitchMean > 0
-    ? `${Math.round(voicePitchMean)}Hz付近` : '未取得（音量のみで判定）';
-  const voiceGap = threshold - noiseFloor;
-  const qualityLabel = voiceGap > noiseFloor * 2 ? 'しっかり取れました' :
-                       voiceGap > noiseFloor      ? 'まずまず取れました' : '取得が不十分かもしれません';
+  const noiseLabel   = noiseFloor < 0.01 ? '静か' : noiseFloor < 0.03 ? 'やや静か' : 'やや騒がしい';
+  const pitchLabel   = voicePitchMean > 0 ? `${Math.round(voicePitchMean)}Hz付近` : '未取得';
+  const sampleCount  = voicePitchSamples.length;
+  const qualityLabel = sampleCount >= 50 ? 'しっかり取れました'
+                     : sampleCount >= 25 ? 'まずまず取れました'
+                     : '取得が不十分かもしれません（再キャリブレーション推奨）';
   calibResultEl.textContent =
     `環境音：${noiseLabel}　声：${qualityLabel}\nピッチ：${pitchLabel}`;
 }
@@ -466,9 +466,18 @@ function finishCalibration() {
   updateThreshInfo();
   updateCalibResult();
   saveCalib();
-  initDots();
-  setPhaseUI('watching', '監視中です\n独り言を検出したらアラートします');
 
+  // 完了メッセージを表示してから監視へ移行
+  const sampleCount = voicePitchSamples.length;
+  const completeMsg = sampleCount >= 50
+    ? 'キャリブレーション完了！\nまもなく監視を開始します'
+    : 'キャリブレーション完了\n（声のサンプルが少なめです）';
+  setPhaseUI('calibrating', completeMsg);
+
+  setTimeout(() => {
+    initDots();
+    setPhaseUI('watching', '監視中です\n独り言を検出したらアラートします');
+  }, 2000);
 }
 
 // ---- 解析ループ ----
