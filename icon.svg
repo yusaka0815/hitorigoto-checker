@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#1a1a2e"/>
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#2196f3" stroke-width="16"/>
+  <!-- マイク本体 -->
+  <rect x="206" y="140" width="100" height="160" rx="50" fill="#a0c4ff"/>
+  <!-- マイクスタンド -->
+  <path d="M176 280 Q176 360 256 360 Q336 360 336 280" fill="none" stroke="#a0c4ff" stroke-width="20" stroke-linecap="round"/>
+  <line x1="256" y1="360" x2="256" y2="400" stroke="#a0c4ff" stroke-width="20" stroke-linecap="round"/>
+  <line x1="210" y1="400" x2="302" y2="400" stroke="#a0c4ff" stroke-width="20" stroke-linecap="round"/>
+</svg>

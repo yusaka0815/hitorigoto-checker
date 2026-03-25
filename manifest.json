@@ -1,0 +1,18 @@
+{
+  "name": "独り言チェッカー",
+  "short_name": "独り言",
+  "description": "独り言を検出してアラートするアプリ",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
