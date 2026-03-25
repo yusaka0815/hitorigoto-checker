@@ -19,27 +19,18 @@
       padding: 24px;
     }
 
-    h1 {
-      font-size: 1.4rem;
-      margin-bottom: 32px;
-      color: #a0c4ff;
-    }
+    h1 { font-size: 1.4rem; margin-bottom: 4px; color: #a0c4ff; }
+    .version { font-size: 0.7rem; color: #555; margin-bottom: 24px; }
 
     #status-circle {
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
-      background: #2d2d4e;
-      border: 4px solid #444;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      width: 160px; height: 160px;
+      border-radius: 50%; border: 4px solid #444;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
       margin-bottom: 32px;
       transition: background 0.2s, border-color 0.2s;
     }
-
-    #status-circle.idle    { background: #2d2d4e; border-color: #555; }
+    #status-circle.idle        { background: #2d2d4e; border-color: #555; }
     #status-circle.calibrating { background: #2d4a2d; border-color: #4caf50; }
     #status-circle.watching    { background: #1e3a5f; border-color: #2196f3; }
     #status-circle.detected    { background: #5f1e1e; border-color: #f44336; }
@@ -48,70 +39,43 @@
     #status-label { font-size: 0.85rem; margin-top: 6px; color: #aaa; }
 
     #message {
-      font-size: 1rem;
-      text-align: center;
-      min-height: 2.4em;
-      margin-bottom: 28px;
-      color: #ccc;
-      line-height: 1.6;
+      font-size: 1rem; text-align: center;
+      min-height: 2.4em; margin-bottom: 28px;
+      color: #ccc; line-height: 1.6;
     }
 
-    #level-bar-wrap {
-      width: 100%;
-      max-width: 320px;
-      margin-bottom: 28px;
-    }
+    #level-bar-wrap { width: 100%; max-width: 320px; margin-bottom: 8px; }
     #level-label { font-size: 0.75rem; color: #888; margin-bottom: 4px; }
-    #level-bar-bg {
-      background: #333;
-      border-radius: 4px;
-      height: 10px;
-      overflow: hidden;
-    }
+    #level-bar-bg { background: #333; border-radius: 4px; height: 10px; overflow: hidden; }
     #level-bar {
-      height: 100%;
-      width: 0%;
-      background: #2196f3;
-      border-radius: 4px;
+      height: 100%; width: 0%;
+      background: #2196f3; border-radius: 4px;
       transition: width 0.1s, background 0.1s;
     }
     #level-bar.over { background: #f44336; }
-
-    #threshold-info {
-      font-size: 0.75rem;
-      color: #666;
-      margin-bottom: 28px;
-    }
+    #threshold-info { font-size: 0.75rem; color: #666; margin-bottom: 28px; }
 
     button {
-      padding: 14px 36px;
-      font-size: 1rem;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #2196f3;
-      color: #fff;
-      margin: 6px;
+      padding: 14px 36px; font-size: 1rem;
+      border: none; border-radius: 8px;
+      cursor: pointer; background: #2196f3; color: #fff; margin: 6px;
     }
     button:disabled { background: #444; color: #777; cursor: default; }
-    button#stop-btn  { background: #f44336; }
+    #stop-btn        { background: #f44336; }
+    #recalibrate-btn { background: #555; font-size: 0.85rem; padding: 10px 24px; }
+    #reset-btn       { background: #5a7a3a; font-size: 0.75rem; padding: 8px 18px; margin-top: 4px; }
 
-    #alert-count {
-      margin-top: 24px;
-      font-size: 0.85rem;
-      color: #888;
-    }
-
-    #recalibrate-btn {
-      background: #555;
-      font-size: 0.85rem;
-      padding: 10px 24px;
+    #alert-count { margin-top: 16px; font-size: 0.85rem; color: #888; }
+    #saved-info  { font-size: 0.72rem; color: #4a8; margin-top: 6px; }
+    #debug-info  {
+      margin-top: 12px; font-size: 0.7rem; color: #666;
+      width: 100%; max-width: 320px; line-height: 1.8;
     }
   </style>
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div style="font-size:0.7rem;color:#555;margin-top:-24px;margin-bottom:24px;">v1.1.6</div>
+  <div class="version">v1.2.0</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -131,48 +95,65 @@
     <button id="stop-btn" disabled>停止</button>
   </div>
   <button id="recalibrate-btn" disabled>再キャリブレーション</button>
+  <button id="reset-btn">設定リセット</button>
 
   <div id="alert-count">アラート回数: 0</div>
-  <div id="debug-info" style="margin-top:16px;font-size:0.7rem;color:#666;text-align:left;width:100%;max-width:320px;line-height:1.8;word-break:break-all;"></div>
+  <div id="saved-info"></div>
+  <div id="debug-info"></div>
 
 <script>
-// ---- 設定 ----
-const CALIBRATION_SEC    = 4;      // キャリブレーション秒数
-const THRESHOLD_FACTOR   = 4.0;    // ベースラインの何倍を閾値にするか
-const MIN_THRESHOLD      = 0.005;  // 最低閾値（静かすぎる環境対策）
-const SPEECH_HOLD_MS     = 1200;   // 発話判定の持続時間 (ms)
-const ALERT_COOLDOWN_MS  = 5000;   // アラート後のクールダウン (ms)
-const RECALIB_INTERVAL_MS = 60000; // 自動再キャリブレーション間隔 (ms)
+// ---- 定数 ----
+const NOISE_SEC         = 4;
+const VOICE_SEC         = 4;
+const SPEECH_HOLD_MS    = 1200;
+const ALERT_COOLDOWN_MS = 5000;
+const RECALIB_MS        = 60000;
+const STORAGE_KEY       = 'hitorigoto_calib';
 
 // ---- 状態 ----
-let audioCtx, analyser, micStream, animFrame;
-let noiseFloor    = 0;
-let threshold     = 0;
-let speechStart   = null;
-let lastAlertTime = 0;
-let alertCount    = 0;
-let phase         = 'idle'; // idle | calibrating | watching
-let calibSamples  = [];
-let calibTimer    = null;
-let recalibTimer  = null;
-let beepCtx       = null;
+let audioCtx = null, analyser = null, micStream = null;
+let loopTimer = null, calibTimer = null, recalibTimer = null, beepCtx = null;
+let noiseFloor = 0, threshold = 0;
+let speechStart = null, lastAlertTime = 0, alertCount = 0;
+// calibStep: 'noise' | 'voice' | null
+let calibStep = null;
+let noiseSamples = [], voiceSamples = [];
+// phase: 'idle' | 'calibrating' | 'watching' | 'detected'
+let phase = 'idle';
 
 // ---- DOM ----
-const circle        = document.getElementById('status-circle');
-const icon          = document.getElementById('status-icon');
-const label         = document.getElementById('status-label');
-const message       = document.getElementById('message');
-const levelBar      = document.getElementById('level-bar');
-const threshInfo    = document.getElementById('threshold-info');
-const startBtn      = document.getElementById('start-btn');
-const stopBtn       = document.getElementById('stop-btn');
-const recalibBtn    = document.getElementById('recalibrate-btn');
-const alertCountEl  = document.getElementById('alert-count');
+const circle       = document.getElementById('status-circle');
+const icon         = document.getElementById('status-icon');
+const labelEl      = document.getElementById('status-label');
+const message      = document.getElementById('message');
+const levelBar     = document.getElementById('level-bar');
+const threshInfo   = document.getElementById('threshold-info');
+const startBtn     = document.getElementById('start-btn');
+const stopBtn      = document.getElementById('stop-btn');
+const recalibBtn   = document.getElementById('recalibrate-btn');
+const resetBtn     = document.getElementById('reset-btn');
+const alertCountEl = document.getElementById('alert-count');
+const savedInfoEl  = document.getElementById('saved-info');
+const debugEl      = document.getElementById('debug-info');
 
-// ---- ビープ音生成 ----
+// ---- localStorage ----
+function saveCalib() {
+  const data = { noiseFloor, threshold, savedAt: new Date().toLocaleString('ja-JP') };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  savedInfoEl.textContent = `保存済み: ${data.savedAt}`;
+}
+
+function loadCalib() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+// ---- ビープ音 ----
 function beep(freq = 880, dur = 0.25, vol = 0.6) {
   if (!beepCtx) beepCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc  = beepCtx.createOscillator();
+  const osc = beepCtx.createOscillator();
   const gain = beepCtx.createGain();
   osc.connect(gain);
   gain.connect(beepCtx.destination);
@@ -184,70 +165,94 @@ function beep(freq = 880, dur = 0.25, vol = 0.6) {
   osc.stop(beepCtx.currentTime + dur);
 }
 
-
-// ---- UIの更新 ----
+// ---- UI ----
 function setPhaseUI(p, msg) {
   phase = p;
   circle.className = p;
-  if (p === 'idle')        { icon.textContent = '🎤'; label.textContent = '待機中'; }
-  if (p === 'calibrating') { icon.textContent = '⏳'; label.textContent = 'キャリブレーション中'; }
-  if (p === 'watching')    { icon.textContent = '👁'; label.textContent = '監視中'; }
-  if (p === 'detected')    { icon.textContent = '⚠️'; label.textContent = '発話検出！'; }
-  if (msg) message.textContent = msg;
+  const icons  = { idle: '🎤', calibrating: '⏳', watching: '👁', detected: '⚠️' };
+  const labels = { idle: '待機中', calibrating: 'キャリブ中', watching: '監視中', detected: '発話検出！' };
+  icon.textContent  = icons[p]  || '🎤';
+  labelEl.textContent = labels[p] || '';
+  if (msg !== undefined) message.textContent = msg;
 }
 
-// ---- キャリブレーション開始 ----
-function startCalibration() {
-  calibSamples = [];
-  setPhaseUI('calibrating', `静かにしてください…\n環境音を計測中 (${CALIBRATION_SEC}秒)`);
+function updateThreshInfo() {
+  threshInfo.textContent =
+    `閾値: ${threshold.toFixed(5)}（環境音: ${noiseFloor.toFixed(5)}）`;
+}
 
-  let remaining = CALIBRATION_SEC;
-  const tick = () => {
-    remaining--;
-    if (remaining > 0) {
-      message.textContent = `静かにしてください…\n環境音を計測中 (${remaining}秒)`;
-    }
-  };
-  calibTimer = setInterval(tick, 1000);
+// ---- キャリブレーション ----
+function startCalibration() {
+  noiseSamples = [];
+  voiceSamples = [];
+  calibStep = 'noise';
+  setPhaseUI('calibrating', `静かにしてください…\n環境音を計測中（${NOISE_SEC}秒）`);
+
+  let rem = NOISE_SEC;
+  calibTimer = setInterval(() => {
+    rem--;
+    if (rem > 0) message.textContent = `静かにしてください…\n環境音を計測中（${rem}秒）`;
+  }, 1000);
 
   setTimeout(() => {
     clearInterval(calibTimer);
-    finishCalibration();
-  }, CALIBRATION_SEC * 1000);
+    // 環境音ベースライン確定
+    if (noiseSamples.length > 0) {
+      const mean = noiseSamples.reduce((a, b) => a + b, 0) / noiseSamples.length;
+      const max  = Math.max(...noiseSamples);
+      noiseFloor = mean * 0.7 + max * 0.3;
+    } else {
+      noiseFloor = 0.005;
+    }
+    // 声フェーズへ
+    calibStep = 'voice';
+    setPhaseUI('calibrating', `今度は普通に話してください\n声を計測中（${VOICE_SEC}秒）`);
+    let rem2 = VOICE_SEC;
+    calibTimer = setInterval(() => {
+      rem2--;
+      if (rem2 > 0) message.textContent = `今度は普通に話してください\n声を計測中（${rem2}秒）`;
+    }, 1000);
+    setTimeout(() => {
+      clearInterval(calibTimer);
+      finishCalibration();
+    }, VOICE_SEC * 1000);
+  }, NOISE_SEC * 1000);
 }
 
 function finishCalibration() {
-  if (calibSamples.length === 0) {
-    noiseFloor = MIN_THRESHOLD;
+  calibStep = null;
+  const voiceLevel = voiceSamples.length > 0
+    ? voiceSamples.reduce((a, b) => a + b, 0) / voiceSamples.length
+    : 0;
+
+  if (voiceLevel > noiseFloor * 1.5) {
+    // 環境音と声の間（環境音寄り35%）に閾値を設定
+    threshold = noiseFloor + (voiceLevel - noiseFloor) * 0.35;
   } else {
-    const mean = calibSamples.reduce((a, b) => a + b, 0) / calibSamples.length;
-    const max  = Math.max(...calibSamples);
-    // 平均と最大の中間をベースラインに（突発音への耐性）
-    noiseFloor = mean * 0.7 + max * 0.3;
+    // 声が取れなかった場合は環境音の4倍
+    threshold = Math.max(noiseFloor * 4.0, 0.005);
   }
-  threshold = Math.max(noiseFloor * THRESHOLD_FACTOR, MIN_THRESHOLD);
-  threshInfo.textContent = `閾値: ${threshold.toFixed(4)} (ノイズフロア: ${noiseFloor.toFixed(4)})`;
+
+  updateThreshInfo();
+  saveCalib();
   setPhaseUI('watching', '監視中です\n独り言を検出したらアラートします');
 
-  // 定期的な自動再キャリブレーション
   clearTimeout(recalibTimer);
   recalibTimer = setTimeout(() => {
     if (phase === 'watching') startCalibration();
-  }, RECALIB_INTERVAL_MS);
+  }, RECALIB_MS);
 }
 
-// ---- メイン解析ループ ----
-function analyse() {
-  if (phase === 'idle') return;
-
-  const dataArray  = new Uint8Array(analyser.fftSize);
+// ---- 解析ループ ----
+function startLoop() {
+  const dataArray = new Uint8Array(analyser.fftSize);
   let loopCount = 0;
 
-  function loop() {
+  loopTimer = setInterval(() => {
     loopCount++;
     analyser.getByteTimeDomainData(dataArray);
 
-    // 時間領域RMSでエネルギー計算（128が無音基準）
+    // RMSエネルギー計算
     let sum = 0;
     for (let i = 0; i < dataArray.length; i++) {
       const v = (dataArray[i] - 128) / 128;
@@ -255,51 +260,56 @@ function analyse() {
     }
     const energy = Math.sqrt(sum / dataArray.length);
 
-    // バーの更新
-    const pct = Math.min((energy / (threshold * 1.5)) * 100, 100);
-    levelBar.style.width = pct + '%';
+    // バー更新
+    const ref = threshold > 0 ? threshold * 1.5 : 0.01;
+    levelBar.style.width = Math.min(energy / ref * 100, 100) + '%';
     levelBar.className   = energy > threshold ? 'over' : '';
 
-    // デバッグ: エネルギー値をリアルタイム表示
-    const dbg = document.getElementById('debug-info');
-    dbg.textContent = (dbg.dataset.base || '') +
-      `\nloop#${loopCount} energy: ${energy.toFixed(6)}\nthreshold: ${threshold.toFixed(6)}`;
+    // デバッグ表示
+    debugEl.textContent =
+      `loop#${loopCount}  energy: ${energy.toFixed(6)}\n` +
+      `threshold: ${threshold.toFixed(6)}  noise: ${noiseFloor.toFixed(6)}`;
 
-    // キャリブレーション中はサンプルを蓄積
+    // キャリブレーション中はサンプル蓄積
     if (phase === 'calibrating') {
-      calibSamples.push(energy);
+      if (calibStep === 'noise') noiseSamples.push(energy);
+      if (calibStep === 'voice') voiceSamples.push(energy);
       return;
     }
     if (phase !== 'watching' && phase !== 'detected') return;
 
+    // 発話検出
     const now = Date.now();
-
     if (energy > threshold) {
       if (!speechStart) speechStart = now;
-      const dur = now - speechStart;
-
-      if (dur >= SPEECH_HOLD_MS && now - lastAlertTime > ALERT_COOLDOWN_MS) {
-        // アラート発火
+      if (now - speechStart >= SPEECH_HOLD_MS && now - lastAlertTime > ALERT_COOLDOWN_MS) {
         lastAlertTime = now;
         speechStart   = null;
         alertCount++;
         alertCountEl.textContent = `アラート回数: ${alertCount}`;
-
         beep(880, 0.15);
         setTimeout(() => beep(880, 0.15), 180);
         setTimeout(() => beep(1100, 0.2), 360);
-
         setPhaseUI('detected', '⚠️ 独り言を検出しました');
         setTimeout(() => {
-          if (phase === 'detected') setPhaseUI('watching', '監視中です\n独り言を検出したらアラートします');
+          if (phase === 'detected')
+            setPhaseUI('watching', '監視中です\n独り言を検出したらアラートします');
         }, 3000);
       }
     } else {
       speechStart = null;
     }
-  }
-  animFrame = setInterval(loop, 100); // 100ms間隔（requestAnimationFrameの代替）
+  }, 100);
 }
+
+// ---- 起動時チェック ----
+window.addEventListener('load', () => {
+  const saved = loadCalib();
+  if (saved) {
+    savedInfoEl.textContent = `前回の設定: ${saved.savedAt}`;
+    message.textContent = '前回の設定を読み込めます\n「開始」を押してください';
+  }
+});
 
 // ---- 開始 ----
 startBtn.addEventListener('click', async () => {
@@ -308,71 +318,78 @@ startBtn.addEventListener('click', async () => {
     await beepCtx.resume();
 
     micStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false
-      },
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
       video: false
     });
-    audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     await audioCtx.resume();
-    analyser  = audioCtx.createAnalyser();
+    analyser = audioCtx.createAnalyser();
     analyser.fftSize = 2048;
 
     const source = audioCtx.createMediaStreamSource(micStream);
     source.connect(analyser);
-
-    // Androidで音声グラフが止まらないよう無音で出力に接続
     const silentGain = audioCtx.createGain();
     silentGain.gain.value = 0;
     analyser.connect(silentGain);
     silentGain.connect(audioCtx.destination);
 
-    startBtn.disabled      = true;
-    stopBtn.disabled       = false;
-    recalibBtn.disabled    = false;
+    startBtn.disabled   = true;
+    stopBtn.disabled    = false;
+    recalibBtn.disabled = false;
 
-    const tracks = micStream.getAudioTracks();
-    const dbg = document.getElementById('debug-info');
-    dbg.dataset.base =
-      `AudioCtx: ${audioCtx.state} / ${audioCtx.sampleRate}Hz\n` +
-      `Mic: ${tracks[0]?.readyState} / enabled:${tracks[0]?.enabled}`;
-    dbg.textContent = dbg.dataset.base;
+    startLoop();
 
-    startCalibration();
-    analyse();
+    const saved = loadCalib();
+    if (saved) {
+      noiseFloor = saved.noiseFloor;
+      threshold  = saved.threshold;
+      updateThreshInfo();
+      setPhaseUI('watching', '前回の設定で監視中です\n独り言を検出したらアラートします');
+    } else {
+      startCalibration();
+    }
   } catch (e) {
     message.textContent = 'マイクへのアクセスが拒否されました。\nブラウザの設定を確認してください。';
-    document.getElementById('debug-info').textContent = 'エラー: ' + e.message;
-    console.error(e);
+    debugEl.textContent = 'エラー: ' + e.message;
   }
 });
 
 // ---- 停止 ----
 stopBtn.addEventListener('click', () => {
-  clearInterval(animFrame);
+  clearInterval(loopTimer);
   clearInterval(calibTimer);
   clearTimeout(recalibTimer);
   if (micStream) micStream.getTracks().forEach(t => t.stop());
   if (audioCtx)  audioCtx.close();
   audioCtx = analyser = micStream = null;
   speechStart = null;
-
   startBtn.disabled   = false;
   stopBtn.disabled    = true;
   recalibBtn.disabled = true;
-
   levelBar.style.width = '0%';
   threshInfo.textContent = '閾値: —';
   setPhaseUI('idle', '「開始」を押して\nキャリブレーションを始めてください');
 });
 
-// ---- 手動再キャリブレーション ----
+// ---- 再キャリブレーション ----
 recalibBtn.addEventListener('click', () => {
   if (phase === 'watching' || phase === 'detected') {
     speechStart = null;
     startCalibration();
+  }
+});
+
+// ---- 設定リセット ----
+resetBtn.addEventListener('click', () => {
+  localStorage.removeItem(STORAGE_KEY);
+  noiseFloor = 0;
+  threshold  = 0;
+  savedInfoEl.textContent = '';
+  threshInfo.textContent  = '閾値: —';
+  if (phase === 'idle') {
+    message.textContent = '設定をリセットしました\n「開始」でキャリブレーションを行います';
+  } else {
+    message.textContent = '設定をリセットしました\n「再キャリブレーション」で再設定できます';
   }
 });
 </script>
