@@ -147,7 +147,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.2</div>
+  <div class="version">v1.6.3</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -215,7 +215,7 @@ const PITCH_MARGIN_HZ   = 80;
 
 // 断続発声検出
 const SPEECH_WINDOW_MS  = 5000; // 判定ウィンドウ（5秒）
-const SPEECH_MIN_SEG_MS = 150;  // 1回の発声の最小継続時間（ms）
+const SPEECH_MIN_SEG_MS = 350;  // 1回の発声の最小継続時間（ms）※せき・短音を除外
 const SPEECH_COUNT_ALERT = 3;   // この回数以上でアラート
 
 // 感度スライダー値 → 閾値乗数（1=鈍感×2.0、4=標準×1.0、7=敏感×0.4）
@@ -400,7 +400,7 @@ function detectPitch(freqData, sampleRate, fftSize) {
       maxIdx = i;
     }
   }
-  if (maxIdx < 0 || maxVal < 15) return null; // 信号が弱すぎる
+  if (maxIdx < 0 || maxVal < 40) return null; // 信号が弱すぎる
 
   const pitchHz = maxIdx * binSize;
 
@@ -536,7 +536,7 @@ function startLoop() {
         voiceOk = false;
       } else {
         const pitchDiff = Math.abs(pitchResult.pitchHz - voicePitchMean);
-        voiceOk = pitchDiff <= PITCH_MARGIN_HZ && pitchResult.harmonicStrength > 0.15;
+        voiceOk = pitchDiff <= PITCH_MARGIN_HZ && pitchResult.harmonicStrength > 0.25;
       }
     }
     levelBar.className = voiceOk ? 'over' : '';
