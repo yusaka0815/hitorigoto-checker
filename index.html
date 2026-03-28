@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.75</div>
+  <div class="version">v1.6.76</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -432,7 +432,9 @@ async function requestWakeLock() {
         wakeLockStatusEl.textContent = '画面常時点灯：有効';
         wakeLock.addEventListener('release', () => {
           wakeLock = null; // ブラウザが自動解放した場合もnullにしておく
-          wakeLockStatusEl.textContent = '画面常時点灯：有効（動画）';
+          // v1.6.76: releaseWakeLock()による意図的な解放後にreleaseイベントが遅れて
+          // 発火しステータスが残るバグを修正。監視中のみステータスを更新する。
+          if (phase !== 'idle') wakeLockStatusEl.textContent = '画面常時点灯：有効（動画）';
         });
       } catch (e) {
         wakeLockStatusEl.textContent = '画面常時点灯：有効（動画）';
