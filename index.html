@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.33</div>
+  <div class="version">v1.6.34</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -346,6 +346,12 @@ function speakAlert() {
     utter.rate   = 1.0;
     utter.pitch  = 1.1;
     utter.volume = 1.0;
+    utter.onerror = () => {
+      // 音声合成に失敗した場合はビープ音にフォールバック
+      beep(880, 0.15);
+      setTimeout(() => beep(880, 0.15), 180);
+      setTimeout(() => beep(1100, 0.2), 360);
+    };
     window.speechSynthesis.speak(utter);
   } else {
     // 非対応ブラウザはビープ音にフォールバック
