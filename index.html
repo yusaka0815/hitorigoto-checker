@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.37</div>
+  <div class="version">v1.6.38</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -808,7 +808,7 @@ startBtn.addEventListener('click', async () => {
     startLoop();
 
     const saved = loadCalib();
-    if (saved) {
+    if (saved && saved.threshold > 0 && saved.noiseFloor >= 0) {
       noiseFloor        = saved.noiseFloor;
       threshold         = saved.threshold;
       voicePitchMean    = saved.voicePitchMean || 0;
