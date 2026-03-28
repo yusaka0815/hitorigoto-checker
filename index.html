@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.52</div>
+  <div class="version">v1.6.53</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -301,8 +301,10 @@ function saveCalib() {
     sampleCount: voicePitchSamples.length,
     savedAt: new Date().toLocaleString('ja-JP')
   };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  savedInfoEl.textContent = `保存済み: ${data.savedAt}`;
+  try { // v1.6.53: プライベートモード等でlocalStorageが使えない場合に備える
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    savedInfoEl.textContent = `保存済み: ${data.savedAt}`;
+  } catch { /* 保存失敗は無視（次回起動時にキャリブが必要になるだけ） */ }
 }
 
 function loadCalib() {
