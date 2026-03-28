@@ -175,7 +175,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.25</div>
+  <div class="version">v1.6.26</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -190,7 +190,7 @@
   </div>
 
   <div id="sensitivity-wrap">
-    <div class="sens-header"><span>感度調整</span></div>
+    <div class="sens-header">感度調整</div>
     <input type="range" id="sensitivity" min="1" max="7" step="1" value="4">
     <div class="ends"><span>鈍感（誤検知を減らす）</span><span>敏感（小声も検出）</span></div>
     <div id="sensitivity-val">標準</div>
@@ -810,7 +810,12 @@ startBtn.addEventListener('click', async () => {
     if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
     if (audioCtx)  { audioCtx.close(); audioCtx = analyser = null; }
     if (beepCtx)   { beepCtx.close(); beepCtx = null; }
-    message.textContent = 'マイクへのアクセスが拒否されました。\nブラウザの設定を確認してください。';
+    const errMsg = e?.name === 'NotAllowedError'
+      ? 'マイクへのアクセスが拒否されました。\nブラウザの設定を確認してください。'
+      : e?.name === 'NotFoundError'
+      ? 'マイクが見つかりません。\nデバイスを確認してください。'
+      : 'マイクを起動できませんでした。\n他のアプリがマイクを使用中かもしれません。';
+    message.textContent = errMsg;
   }
 });
 
