@@ -174,7 +174,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.8</div>
+  <div class="version">v1.6.9</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -440,12 +440,13 @@ function initDots() {
 
 function updateCountUI(count) {
   if (phase !== 'watching' && phase !== 'detected') return;
-  // サークルの色
-  const colorClass = count === 0 ? 'watching'
-    : count === 1 ? 'count1'
-    : count === 2 ? 'count2'
-    : 'count3';
-  circle.className = colorClass;
+  // サークルの色（detected中は上書きしない — pulse-alertアニメーションを保護）
+  if (phase === 'watching') {
+    circle.className = count === 0 ? 'watching'
+      : count === 1 ? 'count1'
+      : count === 2 ? 'count2'
+      : 'count3';
+  }
 
   // ドットの色
   const dotClass = count === 1 ? 'active-1' : count === 2 ? 'active-2' : 'active-3';
@@ -721,6 +722,7 @@ function stopAudio() {
   stopMonitorTimer();
   clearInterval(loopTimer);
   clearInterval(calibTimer);
+  clearTimeout(calibTimer);
   if (micStream) micStream.getTracks().forEach(t => t.stop());
   if (audioCtx)  audioCtx.close();
   audioCtx = analyser = micStream = null;
