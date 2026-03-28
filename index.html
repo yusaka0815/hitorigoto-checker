@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.60</div>
+  <div class="version">v1.6.61</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -895,6 +895,7 @@ resetBtn.addEventListener('click', () => {
   savedInfoEl.textContent  = '';
   calibResultEl.textContent = '';
   alertCount = 0;
+  alertMsgIndex = 0; // v1.6.61: リセット後のアラートメッセージを最初から再開
   alertCountNum.textContent = '0';
   alertCountEl.classList.remove('alerted');
   countDotsEl.innerHTML = '';
