@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.70</div>
+  <div class="version">v1.6.71</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -796,8 +796,11 @@ sensitivityEl.addEventListener('input', () => {
 
 // ---- 起動時チェック ----
 window.addEventListener('load', () => {
-  const savedSens = localStorage.getItem(SENSITIVITY_KEY);
-  if (savedSens) sensitivityEl.value = savedSens;
+  // v1.6.71: getItemもプライベートモード等で例外を投げる場合があるのでtry/catch（loadCalibと統一）
+  try {
+    const savedSens = localStorage.getItem(SENSITIVITY_KEY);
+    if (savedSens) sensitivityEl.value = savedSens;
+  } catch {}
   sensitivityVal.textContent = SENSITIVITY_LABELS[parseInt(sensitivityEl.value)];
 
   const saved = loadCalib();
