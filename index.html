@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.42</div>
+  <div class="version">v1.6.43</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -754,8 +754,9 @@ function stopAudio() {
   audioCtx = analyser = micStream = null;
   segmentStart = null;
   speechSegments = [];
-  // カウントドットを非アクティブ状態にリセット（待機中画面で残らないように）
-  for (let i = 0; i < dotEls.length; i++) dotEls[i].className = 'count-dot';
+  // 待機中画面でドットが残らないようにDOMから削除
+  countDotsEl.innerHTML = '';
+  dotEls = [];
   releaseWakeLock();
   startBtn.disabled   = false;
   stopBtn.disabled    = true;
