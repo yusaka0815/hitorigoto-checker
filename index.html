@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.65</div>
+  <div class="version">v1.6.66</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -301,6 +301,7 @@ function saveCalib() {
     sampleCount: voicePitchSamples.length,
     savedAt: new Date().toLocaleString('ja-JP')
   };
+  savedSampleCount = data.sampleCount; // v1.6.66: メモリ上の値をlocalStorageと同期
   try { // v1.6.53: プライベートモード等でlocalStorageが使えない場合に備える
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     savedInfoEl.textContent = `保存済み: ${data.savedAt}`;
