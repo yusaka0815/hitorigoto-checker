@@ -174,7 +174,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.14</div>
+  <div class="version">v1.6.15</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -506,6 +506,7 @@ function detectPitch(freqData, sampleRate, fftSize) {
 let voiceCalibStart = 0; // 声フェーズ開始時刻
 
 function startCalibration() {
+  recalibBtn.disabled = true; // キャリブ完了まで再キャリブ不可
   noiseSamples       = [];
   voicePitchSamples  = [];
   voiceEnergySamples = [];
@@ -584,6 +585,7 @@ function finishCalibration() {
 
   setTimeout(() => {
     if (phase === 'idle') return; // Stop済みなら遷移しない
+    recalibBtn.disabled = false;
     initDots();
     alertCount = 0;
     alertCountNum.textContent = '0';
@@ -631,8 +633,6 @@ function startLoop() {
       }
     }
     levelBar.className = voiceOk ? 'over' : '';
-
-    // デバッグ（発声累計は検出ロジック内で更新）
 
     // キャリブレーション中はサンプル蓄積
     if (phase === 'calibrating') {
