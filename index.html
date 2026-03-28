@@ -174,7 +174,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.19</div>
+  <div class="version">v1.6.20</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -336,6 +336,7 @@ let alertMsgIndex = 0;
 function speakAlert() {
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
+    window.speechSynthesis.resume(); // Android Chromeで無音になるバグの回避策
     const msg = ALERT_MESSAGES[alertMsgIndex % ALERT_MESSAGES.length];
     alertMsgIndex++;
     const utter = new SpeechSynthesisUtterance(msg);
