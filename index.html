@@ -175,7 +175,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.27</div>
+  <div class="version">v1.6.28</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -376,7 +376,11 @@ let noSleepVideo = null;
 // 1x1px の透明WebMを無音ループ再生してOSに「メディア再生中」と認識させる
 // MDMポリシーでWake Lock APIが制限されている場合のフォールバック
 function startNoSleepVideo() {
-  if (noSleepVideo) return;
+  if (noSleepVideo) {
+    // 画面復帰時にOSが再生を止めていた場合に再開
+    noSleepVideo.play().catch(() => {});
+    return;
+  }
   // 最小構成のWebMバイナリ（1フレーム・無音・約225バイト）
   const webm = 'data:video/webm;base64,GkXfowEAAAAAAAAfQoaBAUL3gQFC8oEEQvOBCEKChHdlYm1CEwen' +
     'HFNUW0ZGhVZ0ebaxaz9ns01oPKPsaujlf37TtSaHLSXOSevUYZLepNgMeMSXS5AAAAAAAAAAAAA' +
