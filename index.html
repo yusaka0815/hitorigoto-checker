@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.71</div>
+  <div class="version">v1.6.72</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -352,20 +352,19 @@ function speakAlert() {
     utter.onerror = (evt) => {
       // cancel/interrupted（stopAudio()による意図的なキャンセル）は無視
       if (evt.error === 'interrupted' || evt.error === 'cancelled') return;
-      // 監視停止後なら鳴らさない
-      if (phase === 'idle') return;
+      // v1.6.72: キャリブ中も含めて監視フェーズ以外では鳴らさない（'idle'だけでなく'calibrating'も除外）
+      if (phase !== 'watching' && phase !== 'detected') return;
       // 音声合成に失敗した場合はビープ音にフォールバック
       beep(880, 0.15);
-      // v1.6.55: setTimeout内もphaseガードして停止後の誤ビープを防止
-      setTimeout(() => { if (phase !== 'idle') beep(880, 0.15); }, 180);
-      setTimeout(() => { if (phase !== 'idle') beep(1100, 0.2); }, 360);
+      setTimeout(() => { if (phase === 'watching' || phase === 'detected') beep(880, 0.15); }, 180);
+      setTimeout(() => { if (phase === 'watching' || phase === 'detected') beep(1100, 0.2); }, 360);
     };
     window.speechSynthesis.speak(utter);
   } else {
     // 非対応ブラウザはビープ音にフォールバック
     beep(880, 0.15);
-    setTimeout(() => { if (phase !== 'idle') beep(880, 0.15); }, 180);
-    setTimeout(() => { if (phase !== 'idle') beep(1100, 0.2); }, 360);
+    setTimeout(() => { if (phase === 'watching' || phase === 'detected') beep(880, 0.15); }, 180);
+    setTimeout(() => { if (phase === 'watching' || phase === 'detected') beep(1100, 0.2); }, 360);
   }
 }
 
