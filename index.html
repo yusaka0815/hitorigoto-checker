@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.35</div>
+  <div class="version">v1.6.36</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -599,7 +599,7 @@ function finishCalibration() {
   setPhaseUI('calibrating', completeMsg);
 
   setTimeout(() => {
-    if (phase !== 'calibrating') return; // 別セッション開始 or Stop済みなら遷移しない
+    if (phase !== 'calibrating' || calibStep !== null) return; // Stop済み or 新キャリブ開始済みなら遷移しない
     recalibBtn.disabled = false;
     initDots();
     lastAlertTime = 0;
