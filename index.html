@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.58</div>
+  <div class="version">v1.6.59</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -448,6 +448,8 @@ function releaseWakeLock() {
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && phase !== 'idle') {
     await requestWakeLock();
+    // v1.6.59: await中に停止操作が入った場合、noSleepVideoが残るのを防ぐ
+    if (phase === 'idle') { releaseWakeLock(); return; }
     // モバイルでは画面復帰時にAudioContextがsuspendedになる場合がある
     audioCtx?.resume().catch(() => {}); // v1.6.54: 未処理Promise拒否を防止
     beepCtx?.resume().catch(() => {});
