@@ -175,7 +175,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.26</div>
+  <div class="version">v1.6.27</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -501,7 +501,7 @@ function detectPitch(freqData, sampleRate, fftSize) {
   const h3val = h3 < freqData.length ? freqData[h3] : 0;
   const harmonicStrength = (h2val + h3val) / (maxVal * 2);
 
-  return { pitchHz, maxVal, harmonicStrength };
+  return { pitchHz, harmonicStrength };
 }
 
 // ---- キャリブレーション ----
@@ -676,8 +676,10 @@ function startLoop() {
       }
     }
 
-    // ウィンドウ外のセグメントを削除
-    speechSegments = speechSegments.filter(s => now - s.end < SPEECH_WINDOW_MS);
+    // 先頭から古いセグメントを削除（セグメントはend時刻の昇順で蓄積される）
+    while (speechSegments.length > 0 && now - speechSegments[0].end >= SPEECH_WINDOW_MS) {
+      speechSegments.shift();
+    }
 
     // ウィンドウ内の発声回数
     const count = speechSegments.length;
