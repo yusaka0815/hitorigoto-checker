@@ -174,7 +174,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.13</div>
+  <div class="version">v1.6.14</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -427,6 +427,9 @@ function releaseWakeLock() {
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && phase !== 'idle') {
     await requestWakeLock();
+    // モバイルでは画面復帰時にAudioContextがsuspendedになる場合がある
+    audioCtx?.resume();
+    beepCtx?.resume();
   }
 });
 
@@ -722,6 +725,7 @@ function stopAudio() {
   noisePhaseTimer = null;
   if (micStream) micStream.getTracks().forEach(t => t.stop());
   if (audioCtx)  audioCtx.close();
+  if (beepCtx)   { beepCtx.close(); beepCtx = null; }
   audioCtx = analyser = micStream = null;
   segmentStart = null;
   speechSegments = [];
