@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.53</div>
+  <div class="version">v1.6.54</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -448,8 +448,8 @@ document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && phase !== 'idle') {
     await requestWakeLock();
     // モバイルでは画面復帰時にAudioContextがsuspendedになる場合がある
-    audioCtx?.resume();
-    beepCtx?.resume();
+    audioCtx?.resume().catch(() => {}); // v1.6.54: 未処理Promise拒否を防止
+    beepCtx?.resume().catch(() => {});
     // v1.6.52: Android Chromeはspeechsynthesisも画面消灯でpausedになることがある
     if ('speechSynthesis' in window) window.speechSynthesis.resume();
   }
