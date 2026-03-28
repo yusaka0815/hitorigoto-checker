@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.34</div>
+  <div class="version">v1.6.35</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -887,10 +887,10 @@ installBtn.addEventListener('click', async () => {
   if (!installPromptEvent) return;
   installPromptEvent.prompt();
   const { outcome } = await installPromptEvent.userChoice;
-  if (outcome === 'accepted') {
-    installBanner.style.display = 'none';
-  }
   installPromptEvent = null;
+  installBanner.style.display = 'none'; // 承認/拒否どちらでもバナーを非表示
+  if (outcome === 'accepted') return;
+  // 拒否された場合は何もしない（beforeinstallpromptが再発火するまで非表示のまま）
 });
 
 window.addEventListener('appinstalled', () => {
