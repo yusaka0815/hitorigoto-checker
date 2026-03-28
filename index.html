@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.48</div>
+  <div class="version">v1.6.49</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -816,8 +816,8 @@ startBtn.addEventListener('click', async () => {
     recalibBtn.disabled = false;
 
     await requestWakeLock();
-    // v1.6.47: 非同期処理中にstop/resetされた場合はリソース解放してクリーンに中断
-    if (phase === 'idle') { stopAudio(); return; }
+    // v1.6.47: stopAudio()が非同期待機中に呼ばれた場合（audioCtx=null）はクリーンに中断
+    if (!audioCtx) { releaseWakeLock(); return; }
     startLoop();
 
     const saved = loadCalib();
