@@ -1,4 +1,4 @@
-const CACHE = 'hitorigoto-v3'; // バージョンを上げて古いキャッシュを強制削除
+const CACHE = 'hitorigoto-v4'; // バージョンを上げて古いキャッシュを強制削除
 const FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {

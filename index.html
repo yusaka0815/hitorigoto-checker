@@ -19,7 +19,7 @@
     }
 
     body {
-      font-family: sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
       background: #1a1a2e;
       color: #eee;
       display: flex;
@@ -32,22 +32,36 @@
     h1 { font-size: clamp(1.1rem, 4vw, 1.4rem); margin-top: 12px; margin-bottom: 2px; color: #a0c4ff; }
     .version { font-size: clamp(0.7rem, 2.5vw, 0.8rem); color: #888; margin-bottom: 10px; }
 
+    @keyframes breathe {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(33,150,243,0.35); }
+      50%       { box-shadow: 0 0 0 14px rgba(33,150,243,0); }
+    }
+    @keyframes pulse-alert {
+      0%   { box-shadow: 0 0 0 0 rgba(244,67,54,0.7); }
+      70%  { box-shadow: 0 0 0 20px rgba(244,67,54,0); }
+      100% { box-shadow: 0 0 0 0 rgba(244,67,54,0); }
+    }
+    @keyframes pulse-warn {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,152,0,0.4); }
+      50%       { box-shadow: 0 0 0 10px rgba(255,152,0,0); }
+    }
+
     #status-circle {
       width: clamp(110px, 32vw, 140px); height: clamp(110px, 32vw, 140px);
       border-radius: 50%; border: 4px solid #444;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       margin-bottom: 10px;
-      transition: background 0.2s, border-color 0.2s;
+      transition: background 0.3s, border-color 0.3s;
       flex-shrink: 0;
     }
     #status-circle.idle        { background: #2d2d4e; border-color: #555; }
     #status-circle.calibrating { background: #2d4a2d; border-color: #4caf50; }
-    #status-circle.watching    { background: #1e3a5f; border-color: #2196f3; }
-    #status-circle.detected    { background: #5f1e1e; border-color: #f44336; }
-    #status-circle.count1 { background: #1e3a2a; border-color: #8bc34a; }
-    #status-circle.count2 { background: #3a2a1e; border-color: #ff9800; }
-    #status-circle.count3 { background: #5f1e1e; border-color: #f44336; }
+    #status-circle.watching    { background: #1e3a5f; border-color: #2196f3; animation: breathe 2.8s ease-in-out infinite; }
+    #status-circle.detected    { background: #5f1e1e; border-color: #f44336; animation: pulse-alert 0.7s ease-out 3; }
+    #status-circle.count1 { background: #1e3a2a; border-color: #8bc34a; animation: breathe 2.8s ease-in-out infinite; }
+    #status-circle.count2 { background: #3a2a1e; border-color: #ff9800; animation: pulse-warn 1.4s ease-in-out infinite; }
+    #status-circle.count3 { background: #5f1e1e; border-color: #f44336; animation: pulse-warn 0.8s ease-in-out infinite; }
 
     #status-icon  { font-size: clamp(2rem, 8vw, 2.6rem); }
     #status-label { font-size: clamp(0.75rem, 2.5vw, 0.85rem); margin-top: 4px; color: #aaa; }
@@ -91,7 +105,10 @@
       border: none; border-radius: 10px;
       cursor: pointer; background: #2196f3; color: #fff; margin: 4px;
       min-height: 48px;
+      transition: background 0.2s, transform 0.1s, opacity 0.2s;
+      -webkit-tap-highlight-color: transparent;
     }
+    button:active:not(:disabled) { transform: scale(0.95); opacity: 0.85; }
     button:disabled { background: #444; color: #666; cursor: default; }
     #stop-btn        { background: #e53935; }
     #recalibrate-btn { background: #555; font-size: clamp(0.8rem, 2.8vw, 0.9rem); padding: clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 22px); }
@@ -123,7 +140,17 @@
     #voice-progress-bg { background: #333; border-radius: 4px; height: 8px; overflow: hidden; }
     #voice-progress-bar { height: 100%; width: 0%; background: #4caf50; border-radius: 4px; transition: width 0.2s; }
 
-    #alert-count  { font-size: clamp(0.8rem, 2.8vw, 0.9rem); color: #999; flex-shrink: 0; }
+    #alert-count {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #252540; border: 1px solid #3a3a5a; border-radius: 20px;
+      padding: 4px 14px;
+      font-size: clamp(0.78rem, 2.6vw, 0.88rem); color: #aaa; flex-shrink: 0;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    #alert-count.alerted {
+      background: #3a1e1e; border-color: #f44336; color: #f88;
+    }
+    #monitor-time { font-size: clamp(0.62rem, 2vw, 0.7rem); color: #445; flex-shrink: 0; margin-top: 2px; }
     #calib-result { font-size: clamp(0.72rem, 2.5vw, 0.8rem); color: #888; margin-top: 5px; line-height: 1.8; text-align: center; flex-shrink: 0; }
     #saved-info   { font-size: clamp(0.68rem, 2.2vw, 0.75rem); color: #4a8; margin-top: 4px; flex-shrink: 0; }
     #wake-lock-status { font-size: clamp(0.62rem, 2vw, 0.68rem); color: #3a3a5a; margin-top: 4px; flex-shrink: 0; }
@@ -147,7 +174,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.6</div>
+  <div class="version">v1.6.8</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -182,12 +209,13 @@
     <div class="prompt-text">「今日もよろしくお願いします。<br>ちょっと待って。なるほどね。」</div>
   </div>
   <div id="voice-progress-wrap">
-    <div id="voice-progress-label">サンプル収集中... 0/25</div>
+    <div id="voice-progress-label">サンプル収集中... 0/60</div>
     <div id="voice-progress-bg"><div id="voice-progress-bar"></div></div>
   </div>
 
   <div id="count-dots"></div>
-  <div id="alert-count">アラート回数: 0</div>
+  <div id="alert-count">🔔 アラート: <span id="alert-count-num">0</span></div>
+  <div id="monitor-time"></div>
   <div id="calib-result"></div>
   <div id="saved-info"></div>
   <div id="wake-lock-status"></div>
@@ -233,6 +261,7 @@ let voicePitchMean = 0;   // キャリブ済みピッチ（Hz）
 let segmentStart = null;       // 現在の発声セグメント開始時刻
 let speechSegments = [];       // 過去セグメント [{end, duration}]
 let lastAlertTime = 0, alertCount = 0;
+let monitoringStart = 0, monitorTimer = null;
 let calibStep = null;     // 'noise' | 'voice' | null
 let noiseSamples = [], voicePitchSamples = [], voiceEnergySamples = [];
 let phase = 'idle';
@@ -247,7 +276,9 @@ const startBtn       = document.getElementById('start-btn');
 const stopBtn        = document.getElementById('stop-btn');
 const recalibBtn     = document.getElementById('recalibrate-btn');
 const resetBtn       = document.getElementById('reset-btn');
-const alertCountEl   = document.getElementById('alert-count');
+const alertCountEl    = document.getElementById('alert-count');
+const alertCountNum   = document.getElementById('alert-count-num');
+const monitorTimeEl   = document.getElementById('monitor-time');
 const savedInfoEl    = document.getElementById('saved-info');
 const sensitivityEl   = document.getElementById('sensitivity');
 const sensitivityVal  = document.getElementById('sensitivity-val');
@@ -436,6 +467,14 @@ function updateCalibResult() {
     `環境音：${noiseLabel}　声：${qualityLabel}\nピッチ：${pitchLabel}`;
 }
 
+function updateThreshInfo() {
+  const eff = effectiveThreshold();
+  const v   = parseInt(sensitivityEl.value);
+  const label = SENSITIVITY_LABELS[v];
+  updateCalibResult();
+  calibResultEl.textContent += `\n感度：${label}　有効閾値：${eff.toFixed(4)}`;
+}
+
 // ---- ピッチ検出（FFT周波数データから） ----
 function detectPitch(freqData, sampleRate, fftSize) {
   const binSize = sampleRate / fftSize;
@@ -545,6 +584,10 @@ function finishCalibration() {
 
   setTimeout(() => {
     initDots();
+    alertCount = 0;
+    alertCountNum.textContent = '0';
+    alertCountEl.classList.remove('alerted');
+    startMonitorTimer();
     setPhaseUI('watching', '監視中です\n独り言を検出したらアラートします');
   }, 2000);
 }
@@ -644,7 +687,8 @@ function startLoop() {
       segmentStart   = null;
       speechSegments = [];
       alertCount++;
-      alertCountEl.textContent = `アラート回数: ${alertCount}`;
+      alertCountNum.textContent = String(alertCount);
+      alertCountEl.classList.add('alerted');
       speakAlert();
       setPhaseUI('detected', '⚠️ 独り言を検出しました');
       setTimeout(() => {
@@ -655,8 +699,26 @@ function startLoop() {
   }, 100);
 }
 
+// ---- 監視経過時間 ----
+function startMonitorTimer() {
+  monitoringStart = Date.now();
+  clearInterval(monitorTimer);
+  monitorTimer = setInterval(() => {
+    const sec = Math.floor((Date.now() - monitoringStart) / 1000);
+    const m = Math.floor(sec / 60), s = sec % 60;
+    monitorTimeEl.textContent = `監視 ${m}分${String(s).padStart(2,'0')}秒`;
+  }, 1000);
+}
+
+function stopMonitorTimer() {
+  clearInterval(monitorTimer);
+  monitorTimer = null;
+  monitorTimeEl.textContent = '';
+}
+
 // ---- 停止共通処理 ----
 function stopAudio() {
+  stopMonitorTimer();
   clearInterval(loopTimer);
   clearInterval(calibTimer);
   if (micStream) micStream.getTracks().forEach(t => t.stop());
@@ -729,6 +791,10 @@ startBtn.addEventListener('click', async () => {
       updateThreshInfo();
       updateCalibResult();
       initDots();
+      alertCount = 0;
+      alertCountNum.textContent = '0';
+      alertCountEl.classList.remove('alerted');
+      startMonitorTimer();
       setPhaseUI('watching', '前回の設定で監視中です\n独り言を検出したらアラートします');
     } else {
       startCalibration();
@@ -755,10 +821,7 @@ recalibBtn.addEventListener('click', () => {
 
 // ---- 設定リセット ----
 resetBtn.addEventListener('click', () => {
-  if (phase !== 'idle') {
-    stopAudio();
-    countDotsEl.innerHTML = '';
-  }
+  if (phase !== 'idle') stopAudio();
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(SENSITIVITY_KEY);
   noiseFloor = 0; threshold = 0; voicePitchMean = 0;
@@ -766,6 +829,10 @@ resetBtn.addEventListener('click', () => {
   sensitivityVal.textContent = SENSITIVITY_LABELS[4];
   savedInfoEl.textContent  = '';
   calibResultEl.textContent = '';
+  alertCount = 0;
+  alertCountNum.textContent = '0';
+  alertCountEl.classList.remove('alerted');
+  countDotsEl.innerHTML = '';
   setPhaseUI('idle', '設定をリセットしました\n「開始」でキャリブレーションを行います');
 });
 
