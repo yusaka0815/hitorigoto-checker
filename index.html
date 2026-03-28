@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.43</div>
+  <div class="version">v1.6.44</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -779,7 +779,7 @@ window.addEventListener('load', () => {
   sensitivityVal.textContent = SENSITIVITY_LABELS[parseInt(sensitivityEl.value)];
 
   const saved = loadCalib();
-  if (saved) {
+  if (saved && saved.threshold > 0 && saved.noiseFloor >= 0) { // v1.6.44: match startBtn validation
     savedInfoEl.textContent = `前回の設定: ${saved.savedAt}`;
     message.textContent = '前回の設定を読み込めます\n「開始」を押してください';
   }
