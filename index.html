@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.74</div>
+  <div class="version">v1.6.75</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -808,7 +808,7 @@ window.addEventListener('load', () => {
 
   const saved = loadCalib();
   if (saved && saved.threshold > 0 && saved.noiseFloor >= 0) { // v1.6.44: match startBtn validation
-    savedInfoEl.textContent = `前回の設定: ${saved.savedAt}`;
+    savedInfoEl.textContent = `前回の設定: ${saved.savedAt || '日時不明'}`; // v1.6.75: 旧フォーマットのデータでundefinedが表示されるのを防止
     message.textContent = '前回の設定を読み込めます\n「開始」を押してください';
   }
 });
