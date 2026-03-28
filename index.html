@@ -174,7 +174,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.12</div>
+  <div class="version">v1.6.13</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -264,6 +264,8 @@ let lastAlertTime = 0, alertCount = 0;
 let monitoringStart = 0, monitorTimer = null;
 let calibStep = null;     // 'noise' | 'voice' | null
 let noiseSamples = [], voicePitchSamples = [], voiceEnergySamples = [];
+let savedSampleCount = 0; // localStorageから復元したサンプル数（quality表示用）
+let dotEls = [];          // カウントドット要素キャッシュ
 let phase = 'idle';
 
 // ---- DOM ----
@@ -294,6 +296,7 @@ const voiceProgressBar   = document.getElementById('voice-progress-bar');
 function saveCalib() {
   const data = {
     noiseFloor, threshold, voicePitchMean,
+    sampleCount: voicePitchSamples.length,
     savedAt: new Date().toLocaleString('ja-JP')
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -430,10 +433,11 @@ document.addEventListener('visibilitychange', async () => {
 // ---- カウントドット ----
 function initDots() {
   countDotsEl.innerHTML = '';
+  dotEls = [];
   for (let i = 0; i < SPEECH_COUNT_ALERT; i++) {
     const dot = document.createElement('div');
     dot.className = 'count-dot';
-    dot.id = `dot-${i}`;
+    dotEls.push(dot);
     countDotsEl.appendChild(dot);
   }
 }
@@ -448,21 +452,20 @@ function updateCountUI(count) {
       : 'count3';
   }
 
-  // ドットの色
+  // ドットの色（キャッシュ済み要素を直接参照）
   const dotClass = count === 1 ? 'active-1' : count === 2 ? 'active-2' : 'active-3';
-  for (let i = 0; i < SPEECH_COUNT_ALERT; i++) {
-    const dot = document.getElementById(`dot-${i}`);
-    if (!dot) continue;
-    dot.className = 'count-dot' + (i < count ? ` ${dotClass}` : '');
+  for (let i = 0; i < dotEls.length; i++) {
+    dotEls[i].className = 'count-dot' + (i < count ? ` ${dotClass}` : '');
   }
 }
 
 function updateCalibResult() {
-  const noiseLabel   = noiseFloor < 0.01 ? '静か' : noiseFloor < 0.03 ? 'やや静か' : 'やや騒がしい';
-  const pitchLabel   = voicePitchMean > 0 ? `${Math.round(voicePitchMean)}Hz付近` : '未取得';
-  const sampleCount  = voicePitchSamples.length;
-  const qualityLabel = sampleCount >= 50 ? 'しっかり取れました'
-                     : sampleCount >= 25 ? 'まずまず取れました'
+  const noiseLabel  = noiseFloor < 0.01 ? '静か' : noiseFloor < 0.03 ? 'やや静か' : 'やや騒がしい';
+  const pitchLabel  = voicePitchMean > 0 ? `${Math.round(voicePitchMean)}Hz付近` : '未取得';
+  // 直近のキャリブ or 保存データのどちらかのサンプル数を使う
+  const count = voicePitchSamples.length || savedSampleCount;
+  const qualityLabel = count >= 50 ? 'しっかり取れました'
+                     : count >= 25 ? 'まずまず取れました'
                      : '取得が不十分かもしれません（再キャリブレーション推奨）';
   calibResultEl.textContent =
     `環境音：${noiseLabel}　声：${qualityLabel}\nピッチ：${pitchLabel}`;
@@ -781,9 +784,10 @@ startBtn.addEventListener('click', async () => {
 
     const saved = loadCalib();
     if (saved) {
-      noiseFloor     = saved.noiseFloor;
-      threshold      = saved.threshold;
-      voicePitchMean = saved.voicePitchMean || 0;
+      noiseFloor        = saved.noiseFloor;
+      threshold         = saved.threshold;
+      voicePitchMean    = saved.voicePitchMean || 0;
+      savedSampleCount  = saved.sampleCount    || 0;
       updateCalibResult();
       initDots();
       alertCount = 0;
