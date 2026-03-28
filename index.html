@@ -174,7 +174,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.10</div>
+  <div class="version">v1.6.11</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -468,14 +468,6 @@ function updateCalibResult() {
     `環境音：${noiseLabel}　声：${qualityLabel}\nピッチ：${pitchLabel}`;
 }
 
-function updateThreshInfo() {
-  const eff = effectiveThreshold();
-  const v   = parseInt(sensitivityEl.value);
-  const label = SENSITIVITY_LABELS[v];
-  updateCalibResult();
-  calibResultEl.textContent += `\n感度：${label}　有効閾値：${eff.toFixed(4)}`;
-}
-
 // ---- ピッチ検出（FFT周波数データから） ----
 function detectPitch(freqData, sampleRate, fftSize) {
   const binSize = sampleRate / fftSize;
@@ -739,7 +731,7 @@ sensitivityEl.addEventListener('input', () => {
   const v = parseInt(sensitivityEl.value);
   sensitivityVal.textContent = SENSITIVITY_LABELS[v];
   localStorage.setItem(SENSITIVITY_KEY, v);
-  if (threshold > 0) updateThreshInfo();
+  if (threshold > 0) updateCalibResult();
 });
 
 // ---- 起動時チェック ----
@@ -789,7 +781,6 @@ startBtn.addEventListener('click', async () => {
       noiseFloor     = saved.noiseFloor;
       threshold      = saved.threshold;
       voicePitchMean = saved.voicePitchMean || 0;
-      updateThreshInfo();
       updateCalibResult();
       initDots();
       alertCount = 0;
