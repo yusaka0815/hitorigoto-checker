@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.67</div>
+  <div class="version">v1.6.68</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -854,6 +854,7 @@ startBtn.addEventListener('click', async () => {
     }
   } catch (e) {
     // 途中で失敗したリソースを解放
+    releaseWakeLock(); // v1.6.68: requestWakeLock済みの場合に備えて解放（冪等なので安全）
     if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
     if (audioCtx)  { audioCtx.close().catch(() => {}); audioCtx = analyser = null; }
     if (beepCtx)   { beepCtx.close().catch(() => {}); beepCtx = null; }
