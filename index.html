@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.57</div>
+  <div class="version">v1.6.58</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -777,7 +777,7 @@ function stopAudio() {
 sensitivityEl.addEventListener('input', () => {
   const v = parseInt(sensitivityEl.value);
   sensitivityVal.textContent = SENSITIVITY_LABELS[v];
-  localStorage.setItem(SENSITIVITY_KEY, v);
+  try { localStorage.setItem(SENSITIVITY_KEY, v); } catch {} // v1.6.58: プライベートモード等に対応
   if (threshold > 0) updateCalibResult();
 });
 
