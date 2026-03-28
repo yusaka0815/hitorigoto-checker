@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.61</div>
+  <div class="version">v1.6.62</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -774,6 +774,7 @@ function stopAudio() {
   stopBtn.disabled    = true;
   recalibBtn.disabled = true;
   levelBar.style.width = '0%';
+  levelBar.className = ''; // v1.6.62: 停止時に音量バーの色状態もリセット
 }
 
 // ---- 感度スライダー ----
