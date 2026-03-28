@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.46</div>
+  <div class="version">v1.6.47</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -816,6 +816,8 @@ startBtn.addEventListener('click', async () => {
     recalibBtn.disabled = false;
 
     await requestWakeLock();
+    // v1.6.47: requestWakeLock()のawait中にstopBtnが押された場合はクリーンに中断
+    if (phase === 'idle') { releaseWakeLock(); return; }
     startLoop();
 
     const saved = loadCalib();
