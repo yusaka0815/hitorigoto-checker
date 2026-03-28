@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.66</div>
+  <div class="version">v1.6.67</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -582,7 +582,7 @@ function startCalibration() {
 
 function finishCalibration() {
   calibStep = null;
-  clearTimeout(calibTimer);
+  clearTimeout(calibTimer); calibTimer = null; // v1.6.67: stopAudioと同様にnullで統一
   voicePromptEl.style.display     = 'none';
   voiceProgressWrap.style.display = 'none';
 
