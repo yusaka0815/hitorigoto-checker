@@ -1,4 +1,4 @@
-const CACHE = 'hitorigoto-v4'; // バージョンを上げて古いキャッシュを強制削除
+const CACHE = 'hitorigoto-v5'; // バージョンを上げて古いキャッシュを強制削除
 const FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -18,8 +18,10 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     fetch(new Request(e.request, { cache: 'no-cache' }))
       .then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
+        if (res.ok) { // キャッシュには正常レスポンスのみ保存（404等を汚染しない）
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
         return res;
       })
       .catch(() => caches.match(e.request))
