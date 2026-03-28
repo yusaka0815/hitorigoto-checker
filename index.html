@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.63</div>
+  <div class="version">v1.6.64</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -755,9 +755,9 @@ function stopAudio() {
   voicePromptEl.style.display     = 'none';
   voiceProgressWrap.style.display = 'none';
   stopMonitorTimer();
-  clearInterval(loopTimer);
+  clearInterval(loopTimer);  loopTimer = null;  // v1.6.64: 他のタイマー変数と統一
   clearInterval(calibTimer);
-  clearTimeout(calibTimer);
+  clearTimeout(calibTimer);   calibTimer = null;
   clearTimeout(noisePhaseTimer);
   noisePhaseTimer = null;
   if (micStream) micStream.getTracks().forEach(t => t.stop());
