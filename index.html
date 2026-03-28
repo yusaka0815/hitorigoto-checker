@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.64</div>
+  <div class="version">v1.6.65</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -735,11 +735,16 @@ function startLoop() {
 function startMonitorTimer() {
   monitoringStart = Date.now();
   clearInterval(monitorTimer);
-  monitorTimeEl.textContent = '監視 0分00秒'; // v1.6.60: 即時表示（最初の1秒間が空白にならないよう）
+  monitorTimeEl.textContent = '監視 0分00秒'; // v1.6.60: 即時表示
   monitorTimer = setInterval(() => {
     const sec = Math.floor((Date.now() - monitoringStart) / 1000);
-    const m = Math.floor(sec / 60), s = sec % 60;
-    monitorTimeEl.textContent = `監視 ${m}分${String(s).padStart(2,'0')}秒`;
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    // v1.6.65: 1時間以上の場合は時間表示を追加
+    monitorTimeEl.textContent = h > 0
+      ? `監視 ${h}時間${m}分${String(s).padStart(2,'0')}秒`
+      : `監視 ${m}分${String(s).padStart(2,'0')}秒`;
   }, 1000);
 }
 
