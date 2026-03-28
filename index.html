@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.55</div>
+  <div class="version">v1.6.56</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -758,8 +758,8 @@ function stopAudio() {
   clearTimeout(noisePhaseTimer);
   noisePhaseTimer = null;
   if (micStream) micStream.getTracks().forEach(t => t.stop());
-  if (audioCtx)  audioCtx.close();
-  if (beepCtx)   { beepCtx.close(); beepCtx = null; }
+  if (audioCtx)  audioCtx.close().catch(() => {}); // v1.6.56: 既にclosed状態でも安全
+  if (beepCtx)   { beepCtx.close().catch(() => {}); beepCtx = null; }
   audioCtx = analyser = micStream = null;
   segmentStart = null;
   speechSegments = [];
