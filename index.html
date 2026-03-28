@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.38</div>
+  <div class="version">v1.6.39</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -834,7 +834,9 @@ startBtn.addEventListener('click', async () => {
       : e?.name === 'NotFoundError'
       ? 'マイクが見つかりません。\nデバイスを確認してください。'
       : 'マイクを起動できませんでした。\n他のアプリがマイクを使用中かもしれません。';
-    startBtn.disabled = false; // エラー時は再試行できるよう再有効化
+    startBtn.disabled   = false; // エラー時は再試行できるよう再有効化
+    stopBtn.disabled    = true;
+    recalibBtn.disabled = true;
     message.textContent = errMsg;
   }
 });
