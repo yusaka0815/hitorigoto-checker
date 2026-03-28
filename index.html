@@ -147,7 +147,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.5</div>
+  <div class="version">v1.6.6</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -160,7 +160,6 @@
     <div id="level-label">音量レベル</div>
     <div id="level-bar-bg"><div id="level-bar"></div></div>
   </div>
-  <div id="threshold-info">閾値: —</div>
 
   <div id="sensitivity-wrap">
     <div class="sens-header"><span>感度調整</span></div>
@@ -203,7 +202,6 @@ const NOISE_SEC            = 4;
 const VOICE_MIN_SAMPLES    = 60;  // 完了に必要な有効ピッチサンプル数
 const VOICE_MIN_SEC        = 5;   // 最短キャリブレーション時間（秒）
 const VOICE_MAX_SEC        = 20;  // タイムアウト（秒）
-const SPEECH_HOLD_MS       = 1200;
 const ALERT_COOLDOWN_MS = 5000;
 const STORAGE_KEY       = 'hitorigoto_calib';
 const SENSITIVITY_KEY   = 'hitorigoto_sensitivity';
@@ -245,14 +243,12 @@ const icon           = document.getElementById('status-icon');
 const labelEl        = document.getElementById('status-label');
 const message        = document.getElementById('message');
 const levelBar       = document.getElementById('level-bar');
-const threshInfo     = document.getElementById('threshold-info');
 const startBtn       = document.getElementById('start-btn');
 const stopBtn        = document.getElementById('stop-btn');
 const recalibBtn     = document.getElementById('recalibrate-btn');
 const resetBtn       = document.getElementById('reset-btn');
 const alertCountEl   = document.getElementById('alert-count');
 const savedInfoEl    = document.getElementById('saved-info');
-const debugEl        = document.getElementById('debug-info');
 const sensitivityEl   = document.getElementById('sensitivity');
 const sensitivityVal  = document.getElementById('sensitivity-val');
 const countDotsEl     = document.getElementById('count-dots');
@@ -429,11 +425,6 @@ function updateCountUI(count) {
   }
 }
 
-function updateThreshInfo() {
-  // 閾値バーの表示（数値は内部的に使うが、UIには出さない）
-  threshInfo.textContent = '';
-}
-
 function updateCalibResult() {
   const noiseLabel   = noiseFloor < 0.01 ? '静か' : noiseFloor < 0.03 ? 'やや静か' : 'やや騒がしい';
   const pitchLabel   = voicePitchMean > 0 ? `${Math.round(voicePitchMean)}Hz付近` : '未取得';
@@ -542,7 +533,6 @@ function finishCalibration() {
     voicePitchMean = 0; // ピッチが取れなかった場合は音量のみで判定
   }
 
-  updateThreshInfo();
   updateCalibResult();
   saveCalib();
 
@@ -665,6 +655,22 @@ function startLoop() {
   }, 100);
 }
 
+// ---- 停止共通処理 ----
+function stopAudio() {
+  clearInterval(loopTimer);
+  clearInterval(calibTimer);
+  if (micStream) micStream.getTracks().forEach(t => t.stop());
+  if (audioCtx)  audioCtx.close();
+  audioCtx = analyser = micStream = null;
+  segmentStart = null;
+  speechSegments = [];
+  releaseWakeLock();
+  startBtn.disabled   = false;
+  stopBtn.disabled    = true;
+  recalibBtn.disabled = true;
+  levelBar.style.width = '0%';
+}
+
 // ---- 感度スライダー ----
 sensitivityEl.addEventListener('input', () => {
   const v = parseInt(sensitivityEl.value);
@@ -729,55 +735,30 @@ startBtn.addEventListener('click', async () => {
     }
   } catch (e) {
     message.textContent = 'マイクへのアクセスが拒否されました。\nブラウザの設定を確認してください。';
-    debugEl.textContent = 'エラー: ' + e.message;
   }
 });
 
 // ---- 停止 ----
 stopBtn.addEventListener('click', () => {
-  clearInterval(loopTimer);
-  clearInterval(calibTimer);
-  if (micStream) micStream.getTracks().forEach(t => t.stop());
-  if (audioCtx)  audioCtx.close();
-  audioCtx = analyser = micStream = null;
-  segmentStart = null;
-  speechSegments = [];
-  releaseWakeLock();
-  startBtn.disabled   = false;
-  stopBtn.disabled    = true;
-  recalibBtn.disabled = true;
-  levelBar.style.width = '0%';
-  threshInfo.textContent = '閾値: —';
+  stopAudio();
   setPhaseUI('idle', '「開始」を押して\nキャリブレーションを始めてください');
 });
 
 // ---- 再キャリブレーション ----
 recalibBtn.addEventListener('click', () => {
   if (phase === 'watching' || phase === 'detected') {
-    speechStart = null;
+    segmentStart = null;
+    speechSegments = [];
     startCalibration();
   }
 });
 
 // ---- 設定リセット ----
 resetBtn.addEventListener('click', () => {
-  // 起動中なら停止
   if (phase !== 'idle') {
-    clearInterval(loopTimer);
-    clearInterval(calibTimer);
-    if (micStream) micStream.getTracks().forEach(t => t.stop());
-    if (audioCtx)  audioCtx.close();
-    audioCtx = analyser = micStream = null;
-    segmentStart = null;
-    speechSegments = [];
-    releaseWakeLock();
-    startBtn.disabled   = false;
-    stopBtn.disabled    = true;
-    recalibBtn.disabled = true;
-    levelBar.style.width = '0%';
+    stopAudio();
     countDotsEl.innerHTML = '';
   }
-
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(SENSITIVITY_KEY);
   noiseFloor = 0; threshold = 0; voicePitchMean = 0;
@@ -785,7 +766,6 @@ resetBtn.addEventListener('click', () => {
   sensitivityVal.textContent = SENSITIVITY_LABELS[4];
   savedInfoEl.textContent  = '';
   calibResultEl.textContent = '';
-  threshInfo.textContent   = '閾値: —';
   setPhaseUI('idle', '設定をリセットしました\n「開始」でキャリブレーションを行います');
 });
 
