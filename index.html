@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.44</div>
+  <div class="version">v1.6.45</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -532,6 +532,10 @@ function startCalibration() {
   voiceProgressWrap.style.display = 'none';
   // 再キャリブ時に前の watching 状態のドットが残らないようリセット
   for (let i = 0; i < dotEls.length; i++) dotEls[i].className = 'count-dot';
+  // v1.6.45: アラートバッジも新セッション開始時にリセット（キャリブ中も赤いまま残らないように）
+  alertCount = 0;
+  alertCountNum.textContent = '0';
+  alertCountEl.classList.remove('alerted');
   calibStep = 'noise';
   setPhaseUI('calibrating', `静かにしてください…\n環境音を計測中（${NOISE_SEC}秒）`);
 
