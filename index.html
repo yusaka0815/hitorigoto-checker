@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.68</div>
+  <div class="version">v1.6.69</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -621,6 +621,7 @@ function finishCalibration() {
     initDots();
     lastAlertTime = 0;
     alertCount = 0;
+    alertMsgIndex = 0; // v1.6.69: 新セッション開始時にアラートメッセージを最初から再開
     alertCountNum.textContent = '0';
     alertCountEl.classList.remove('alerted');
     startMonitorTimer();
@@ -845,6 +846,7 @@ startBtn.addEventListener('click', async () => {
       initDots();
       lastAlertTime = 0;
       alertCount = 0;
+      alertMsgIndex = 0; // v1.6.69: 新セッション開始時にアラートメッセージを最初から再開
       alertCountNum.textContent = '0';
       alertCountEl.classList.remove('alerted');
       startMonitorTimer();
