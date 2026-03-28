@@ -2,6 +2,7 @@
   "name": "独り言チェッカー",
   "short_name": "独り言",
   "description": "独り言を検出してアラートするアプリ",
+  "lang": "ja",
   "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",
