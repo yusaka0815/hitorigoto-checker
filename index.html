@@ -174,7 +174,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.18</div>
+  <div class="version">v1.6.19</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -587,6 +587,7 @@ function finishCalibration() {
     if (phase === 'idle') return; // Stop済みなら遷移しない
     recalibBtn.disabled = false;
     initDots();
+    lastAlertTime = 0;
     alertCount = 0;
     alertCountNum.textContent = '0';
     alertCountEl.classList.remove('alerted');
@@ -793,6 +794,7 @@ startBtn.addEventListener('click', async () => {
       savedSampleCount  = saved.sampleCount    || 0;
       updateCalibResult();
       initDots();
+      lastAlertTime = 0;
       alertCount = 0;
       alertCountNum.textContent = '0';
       alertCountEl.classList.remove('alerted');
