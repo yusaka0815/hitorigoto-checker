@@ -174,7 +174,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.11</div>
+  <div class="version">v1.6.12</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -255,7 +255,7 @@ const SENSITIVITY_LABELS = {
 
 // ---- 状態 ----
 let audioCtx = null, analyser = null, micStream = null;
-let loopTimer = null, calibTimer = null, beepCtx = null;
+let loopTimer = null, calibTimer = null, noisePhaseTimer = null, beepCtx = null;
 let noiseFloor = 0, threshold = 0;
 let voicePitchMean = 0;   // キャリブ済みピッチ（Hz）
 let segmentStart = null;       // 現在の発声セグメント開始時刻
@@ -514,7 +514,8 @@ function startCalibration() {
     if (rem > 0) message.textContent = `静かにしてください…\n環境音を計測中（${rem}秒）`;
   }, 1000);
 
-  setTimeout(() => {
+  noisePhaseTimer = setTimeout(() => {
+    noisePhaseTimer = null;
     clearInterval(calibTimer);
     // 環境音ベースライン確定
     if (noiseSamples.length > 0) {
@@ -714,6 +715,8 @@ function stopAudio() {
   clearInterval(loopTimer);
   clearInterval(calibTimer);
   clearTimeout(calibTimer);
+  clearTimeout(noisePhaseTimer);
+  noisePhaseTimer = null;
   if (micStream) micStream.getTracks().forEach(t => t.stop());
   if (audioCtx)  audioCtx.close();
   audioCtx = analyser = micStream = null;
