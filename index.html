@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.72</div>
+  <div class="version">v1.6.73</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -422,19 +422,23 @@ async function requestWakeLock() {
   startNoSleepVideo();
 
   // Wake Lock APIも併用（対応環境ではより確実）
-  // v1.6.70: 既にアクティブなロックがある場合は再取得しない
-  // （再取得すると古いsentinelのreleaseリスナーがwakeLock変数をnullにして新sentinelを漏らす恐れがある）
-  if ('wakeLock' in navigator && !wakeLock) {
-    try {
-      wakeLock = await navigator.wakeLock.request('screen');
-      wakeLockStatusEl.textContent = '画面常時点灯：有効';
-      wakeLock.addEventListener('release', () => {
-        wakeLock = null; // ブラウザが自動解放した場合もnullにしておく
+  if ('wakeLock' in navigator) {
+    // v1.6.70: 既にアクティブなロックがある場合は再取得しない
+    // （再取得すると古いsentinelのreleaseリスナーがwakeLock変数をnullにして新sentinelを漏らす恐れがある）
+    // v1.6.73: !wakeLockをelseではなく内側にネストしてwakeLock有効時の誤ステータス更新を修正
+    if (!wakeLock) {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLockStatusEl.textContent = '画面常時点灯：有効';
+        wakeLock.addEventListener('release', () => {
+          wakeLock = null; // ブラウザが自動解放した場合もnullにしておく
+          wakeLockStatusEl.textContent = '画面常時点灯：有効（動画）';
+        });
+      } catch (e) {
         wakeLockStatusEl.textContent = '画面常時点灯：有効（動画）';
-      });
-    } catch (e) {
-      wakeLockStatusEl.textContent = '画面常時点灯：有効（動画）';
+      }
     }
+    // wakeLockがアクティブな場合はステータス更新不要（既に'有効'表示）
   } else {
     wakeLockStatusEl.textContent = '画面常時点灯：有効（動画）';
   }
