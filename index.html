@@ -174,7 +174,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.9</div>
+  <div class="version">v1.6.10</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -584,6 +584,7 @@ function finishCalibration() {
   setPhaseUI('calibrating', completeMsg);
 
   setTimeout(() => {
+    if (phase === 'idle') return; // Stop済みなら遷移しない
     initDots();
     alertCount = 0;
     alertCountNum.textContent = '0';
@@ -597,10 +598,8 @@ function finishCalibration() {
 function startLoop() {
   const timeData = new Uint8Array(analyser.fftSize);
   const freqData = new Uint8Array(analyser.frequencyBinCount);
-  let loopCount  = 0;
 
   loopTimer = setInterval(() => {
-    loopCount++;
     analyser.getByteTimeDomainData(timeData);
     analyser.getByteFrequencyData(freqData);
 
