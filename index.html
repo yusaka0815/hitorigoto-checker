@@ -174,7 +174,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.17</div>
+  <div class="version">v1.6.18</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -815,6 +815,7 @@ stopBtn.addEventListener('click', () => {
 // ---- 再キャリブレーション ----
 recalibBtn.addEventListener('click', () => {
   if (phase === 'watching' || phase === 'detected') {
+    stopMonitorTimer();
     segmentStart = null;
     speechSegments = [];
     startCalibration();
