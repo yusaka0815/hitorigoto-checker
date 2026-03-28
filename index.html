@@ -97,8 +97,8 @@
     }
     #sensitivity-val { font-size: clamp(0.72rem, 2.5vw, 0.8rem); color: #2196f3; text-align: center; margin-top: 3px; }
 
-    #btn-row1 { display: flex; margin-bottom: 6px; flex-shrink: 0; }
-    #btn-row2 { display: flex; gap: 8px; flex-shrink: 0; }
+    #btn-row1 { display: flex; justify-content: center; margin-bottom: 6px; flex-shrink: 0; }
+    #btn-row2 { display: flex; justify-content: center; gap: 8px; flex-shrink: 0; }
 
     button {
       padding: clamp(11px, 3vw, 14px) clamp(24px, 7vw, 32px);
@@ -115,7 +115,8 @@
     #recalibrate-btn { background: #555; font-size: clamp(0.8rem, 2.8vw, 0.9rem); padding: clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 22px); }
     #reset-btn       { background: #5a7a3a; font-size: clamp(0.8rem, 2.8vw, 0.9rem); padding: clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 22px); }
 
-    #count-dots { display: flex; gap: 12px; margin: 8px 0; flex-shrink: 0; }
+    #count-dots { display: flex; justify-content: center; gap: 12px; margin: 8px 0; flex-shrink: 0; }
+    #count-dots:empty { margin: 0; }
     .count-dot {
       width: clamp(18px, 5vw, 22px); height: clamp(18px, 5vw, 22px); border-radius: 50%;
       background: #333; border: 2px solid #444;
@@ -175,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.28</div>
+  <div class="version">v1.6.29</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
