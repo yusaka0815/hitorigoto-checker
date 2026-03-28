@@ -176,7 +176,7 @@
 </head>
 <body>
   <h1>独り言チェッカー</h1>
-  <div class="version">v1.6.36</div>
+  <div class="version">v1.6.37</div>
 
   <div id="status-circle" class="idle">
     <div id="status-icon">🎤</div>
@@ -420,6 +420,7 @@ async function requestWakeLock() {
       wakeLock = await navigator.wakeLock.request('screen');
       wakeLockStatusEl.textContent = '画面常時点灯：有効';
       wakeLock.addEventListener('release', () => {
+        wakeLock = null; // ブラウザが自動解放した場合もnullにしておく
         wakeLockStatusEl.textContent = '画面常時点灯：有効（動画）';
       });
     } catch (e) {
@@ -431,7 +432,7 @@ async function requestWakeLock() {
 }
 
 function releaseWakeLock() {
-  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
   stopNoSleepVideo();
   wakeLockStatusEl.textContent = '';
 }
